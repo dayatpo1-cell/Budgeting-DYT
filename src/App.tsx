@@ -8,990 +8,704 @@ import {
   RotateCcw, 
   Search, 
   Calendar, 
-  Tag, 
-  FileText, 
   Download, 
   Code2, 
   Check, 
   Copy, 
   AlertCircle,
-  CreditCard,
-  CheckCircle2,
+  Receipt,
   Clock,
-  Layers,
-  ChevronRight,
   Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Receipt
+  CheckCircle2
 } from 'lucide-react';
 
-// Tipe Data Transaksi
 export interface Transaction {
-  id: string;
-  description: string;
+  id: number;
+  desc: string;
   amount: number;
   type: 'income' | 'expense';
-  category: string;
   date: string;
-  createdAt: number;
 }
 
-// Tipe Data Tagihan Rutin Bulanan
 export interface RegularBill {
-  id: string;
+  id: number;
   name: string;
   amount: number;
-  dueDate: string; // e.g., "Tiap tgl 10"
-  isPaid: boolean;
-  category: string;
+  paid: boolean;
 }
 
-// Tipe Data Cicilan Berjangka
 export interface Installment {
-  id: string;
+  id: number;
   name: string;
-  monthlyAmount: number;
-  totalTenor: number; // e.g. 6 bulan
-  paidTenor: number;  // e.g. 2 bulan
-  startDate?: string;
-  notes?: string;
+  amount: number; // nominal per bulan
+  tenor: number;  // total bulan
+  paidCount: number; // cicilan ke-
 }
-
-const DEFAULT_CATEGORIES = {
-  income: ['Gaji', 'Bonus', 'Freelance', 'Investasi', 'Bisnis', 'Hadiah', 'Lainnya'],
-  expense: ['Makan & Minum', 'Transportasi', 'Belanja', 'Tagihan & Utilitas', 'Cicilan', 'Hiburan', 'Kesehatan', 'Pendidikan', 'Lainnya']
-};
 
 export default function App() {
-  // Active Navigation Tab
-  const [activeTab, setActiveTab] = useState<'transaksi' | 'tagihan' | 'cicilan'>('transaksi');
-
-  // 1. STATE TRANSAKSI
+  // --- 1. STATE TRANSAKSI ---
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
-      const saved = localStorage.getItem('dompetku_transaksi_v2');
+      const saved = localStorage.getItem('transactions');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error(e);
     }
     return [
-      {
-        id: 'sample-1',
-        description: 'Gaji Bulanan',
-        amount: 7500000,
-        type: 'income',
-        category: 'Gaji',
-        date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
-        createdAt: Date.now() - 86400000 * 2
-      },
-      {
-        id: 'sample-2',
-        description: 'Belanja Bulanan Supermarket',
-        amount: 650000,
-        type: 'expense',
-        category: 'Belanja',
-        date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-        createdAt: Date.now() - 86400000
-      },
-      {
-        id: 'sample-3',
-        description: 'Bensin & Transportasi',
-        amount: 80000,
-        type: 'expense',
-        category: 'Transportasi',
-        date: new Date().toISOString().split('T')[0],
-        createdAt: Date.now()
-      }
+      { id: 1, desc: 'Gaji Bulanan', amount: 6500000, type: 'income', date: 'Hari ini' },
+      { id: 2, desc: 'Makan & Belanja Harian', amount: 85000, type: 'expense', date: 'Hari ini' },
+      { id: 3, desc: 'Bensin Motor', amount: 35000, type: 'expense', date: 'Kemarin' }
     ];
   });
 
-  // 2. STATE TAGIHAN RUTIN BULANAN
-  const [regularBills, setRegularBills] = useState<RegularBill[]>(() => {
+  // --- 2. STATE TAGIHAN RUTIN ---
+  const [bills, setBills] = useState<RegularBill[]>(() => {
     try {
-      const saved = localStorage.getItem('dompetku_tagihan_v2');
+      const saved = localStorage.getItem('bills');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error(e);
     }
     return [
-      { id: 'bill-1', name: 'Listrik PLN Pasca/Token', amount: 350000, dueDate: 'Tgl 10', isPaid: true, category: 'Utilitas' },
-      { id: 'bill-2', name: 'Internet WiFi Rumah', amount: 380000, dueDate: 'Tgl 15', isPaid: false, category: 'Internet' },
-      { id: 'bill-3', name: 'BPJS Kesehatan', amount: 100000, dueDate: 'Tgl 20', isPaid: false, category: 'Kesehatan' }
+      { id: 1, name: 'Listrik PLN Token/Pasca', amount: 350000, paid: true },
+      { id: 2, name: 'Internet WiFi IndiHome', amount: 380000, paid: false },
+      { id: 3, name: 'BPJS Kesehatan Mandiri', amount: 100000, paid: false }
     ];
   });
 
-  // 3. STATE TRACKER CICILAN BERJANGKA
+  // --- 3. STATE TRACKER CICILAN TENOR ---
   const [installments, setInstallments] = useState<Installment[]>(() => {
     try {
-      const saved = localStorage.getItem('dompetku_cicilan_v2');
+      const saved = localStorage.getItem('installments');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error(e);
     }
     return [
-      { id: 'inst-1', name: 'Cicilan Smartphone Baru', monthlyAmount: 750000, totalTenor: 6, paidTenor: 2, notes: 'Tenor 6 bulan' },
-      { id: 'inst-2', name: 'Kulkas 2 Pintu Inverter', monthlyAmount: 420000, totalTenor: 12, paidTenor: 5, notes: 'Bebas bunga' }
+      { id: 1, name: 'Cicilan Smartphone Baru', amount: 750000, tenor: 6, paidCount: 2 },
+      { id: 2, name: 'Kulkas 2 Pintu Inverter', amount: 420000, tenor: 12, paidCount: 5 }
     ];
   });
 
-  // Form State: Transaksi
+  // Form Inputs: Transaksi
   const [txDesc, setTxDesc] = useState('');
-  const [txAmountRaw, setTxAmountRaw] = useState('');
+  const [txAmount, setTxAmount] = useState('');
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
-  const [txCategory, setTxCategory] = useState('Makan & Minum');
-  const [txDate, setTxDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [txError, setTxError] = useState('');
 
-  // Form State: Tagihan Rutin
+  // Form Inputs: Tagihan
   const [billName, setBillName] = useState('');
-  const [billAmountRaw, setBillAmountRaw] = useState('');
-  const [billDueDate, setBillDueDate] = useState('');
-  const [billError, setBillError] = useState('');
+  const [billAmount, setBillAmount] = useState('');
 
-  // Form State: Cicilan Berjangka
+  // Form Inputs: Cicilan
   const [instName, setInstName] = useState('');
-  const [instAmountRaw, setInstAmountRaw] = useState('');
-  const [instTotalTenor, setInstTotalTenor] = useState('6');
-  const [instPaidTenor, setInstPaidTenor] = useState('0');
-  const [instError, setInstError] = useState('');
+  const [instAmount, setInstAmount] = useState('');
+  const [instTenor, setInstTenor] = useState('');
 
-  // Filter & Search Transaksi
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
-  const [searchTx, setSearchTx] = useState('');
+  // Filter & Search
+  const [txFilter, setTxFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Modal State
+  // Modals & UI States
   const [showResetModal, setShowResetModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Sync LocalStorage
+  // Sync to LocalStorage (matching exact user keys)
   useEffect(() => {
     try {
-      localStorage.setItem('dompetku_transaksi_v2', JSON.stringify(transactions));
+      localStorage.setItem('transactions', JSON.stringify(transactions));
     } catch (e) { console.error(e); }
   }, [transactions]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('dompetku_tagihan_v2', JSON.stringify(regularBills));
+      localStorage.setItem('bills', JSON.stringify(bills));
     } catch (e) { console.error(e); }
-  }, [regularBills]);
+  }, [bills]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('dompetku_cicilan_v2', JSON.stringify(installments));
+      localStorage.setItem('installments', JSON.stringify(installments));
     } catch (e) { console.error(e); }
   }, [installments]);
 
-  // Format Rupiah
-  const formatRupiah = (number: number) => {
+  // Formatter Rupiah
+  const formatRupiah = (angka: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(number);
+    }).format(angka);
   };
 
-  // Kalkulasi Keuangan Utama
+  // Dashboard Metrik Kalkulasi
   const totalIncome = useMemo(() => {
-    return transactions
-      .filter((t) => t.type === 'income')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+    return transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   }, [transactions]);
 
   const totalExpense = useMemo(() => {
-    return transactions
-      .filter((t) => t.type === 'expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+    return transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   }, [transactions]);
 
   const balance = totalIncome - totalExpense;
 
-  // Ringkasan Tagihan & Cicilan
-  const unpaidBillsTotal = useMemo(() => {
-    return regularBills
-      .filter(b => !b.isPaid)
-      .reduce((acc, curr) => acc + curr.amount, 0);
-  }, [regularBills]);
+  const incomeTxCount = useMemo(() => transactions.filter(t => t.type === 'income').length, [transactions]);
+  const expenseTxCount = useMemo(() => transactions.filter(t => t.type === 'expense').length, [transactions]);
 
-  const activeInstallmentsTotal = useMemo(() => {
-    return installments
-      .filter(i => i.paidTenor < i.totalTenor)
-      .reduce((acc, curr) => acc + curr.monthlyAmount, 0);
-  }, [installments]);
+  const paidBillsCount = useMemo(() => bills.filter(b => b.paid).length, [bills]);
+  const activeInstallmentsCount = useMemo(() => installments.filter(i => i.paidCount < i.tenor).length, [installments]);
 
   // Filtered Transaksi
   const filteredTransactions = useMemo(() => {
-    return transactions
-      .filter((item) => {
-        if (filterType !== 'all' && item.type !== filterType) return false;
-        if (searchTx.trim() !== '') {
-          const q = searchTx.toLowerCase();
-          const matchDesc = item.description.toLowerCase().includes(q);
-          const matchCat = item.category?.toLowerCase().includes(q);
-          if (!matchDesc && !matchCat) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (dateDiff !== 0) return dateDiff;
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      });
-  }, [transactions, filterType, searchTx]);
+    return transactions.filter(t => {
+      if (txFilter !== 'all' && t.type !== txFilter) return false;
+      if (searchQuery.trim() !== '') {
+        return t.desc.toLowerCase().includes(searchQuery.toLowerCase());
+      }
+      return true;
+    });
+  }, [transactions, txFilter, searchQuery]);
 
-  // Handler: Tambah Transaksi Kas
+  // --- Handlers Transaksi ---
   const handleAddTransaction = (e: React.FormEvent) => {
     e.preventDefault();
-    setTxError('');
+    const cleanDesc = txDesc.trim();
+    const cleanAmount = parseFloat(txAmount);
 
-    const desc = txDesc.trim();
-    const amount = parseInt(txAmountRaw.replace(/[^0-9]/g, ''), 10);
-
-    if (!desc) {
-      setTxError('Harap isi keterangan transaksi.');
-      return;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      setTxError('Harap masukkan nominal yang valid.');
-      return;
-    }
+    if (!cleanDesc || isNaN(cleanAmount) || cleanAmount <= 0) return;
 
     const newTx: Transaction = {
-      id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-      description: desc,
-      amount: amount,
+      id: Date.now(),
+      desc: cleanDesc,
+      amount: cleanAmount,
       type: txType,
-      category: txCategory,
-      date: txDate || new Date().toISOString().split('T')[0],
-      createdAt: Date.now()
+      date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
     };
 
     setTransactions([newTx, ...transactions]);
     setTxDesc('');
-    setTxAmountRaw('');
+    setTxAmount('');
   };
 
-  // Handler: Tambah Tagihan Rutin
-  const handleAddRegularBill = (e: React.FormEvent) => {
+  const handleDeleteTransaction = (id: number) => {
+    setTransactions(transactions.filter(t => t.id !== id));
+  };
+
+  // --- Handlers Tagihan Rutin ---
+  const handleAddBill = (e: React.FormEvent) => {
     e.preventDefault();
-    setBillError('');
-
     const name = billName.trim();
-    const amount = parseInt(billAmountRaw.replace(/[^0-9]/g, ''), 10);
+    const amount = parseFloat(billAmount);
 
-    if (!name) {
-      setBillError('Harap isi nama tagihan rutin.');
-      return;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      setBillError('Harap masukkan nominal tagihan.');
-      return;
-    }
+    if (!name || isNaN(amount) || amount <= 0) return;
 
     const newBill: RegularBill = {
-      id: 'bill-' + Date.now(),
-      name: name,
-      amount: amount,
-      dueDate: billDueDate.trim() || 'Tiap akhir bulan',
-      isPaid: false,
-      category: 'Tagihan Rutin'
+      id: Date.now(),
+      name,
+      amount,
+      paid: false
     };
 
-    setRegularBills([...regularBills, newBill]);
+    setBills([...bills, newBill]);
     setBillName('');
-    setBillAmountRaw('');
-    setBillDueDate('');
+    setBillAmount('');
   };
 
-  // Toggle Status Bayar Tagihan Rutin (Otomatis Catat ke Pengeluaran jika ditandai Lunas)
-  const handleToggleBillStatus = (id: string) => {
-    setRegularBills(prev => prev.map(bill => {
-      if (bill.id === id) {
-        const nextPaid = !bill.isPaid;
-        // Jika berubah menjadi LUNAS, otomatis catat ke riwayat transaksi pengeluaran
+  const handleToggleBill = (id: number) => {
+    setBills(bills.map(b => {
+      if (b.id === id) {
+        const nextPaid = !b.paid;
+        // Jika dicentang LUNAS, otomatis catat ke riwayat pengeluaran
         if (nextPaid) {
           const autoTx: Transaction = {
-            id: 'tx-bill-' + Date.now(),
-            description: `Bayar Tagihan: ${bill.name}`,
-            amount: bill.amount,
+            id: Date.now(),
+            desc: `Tagihan: ${b.name}`,
+            amount: b.amount,
             type: 'expense',
-            category: 'Tagihan & Utilitas',
-            date: new Date().toISOString().split('T')[0],
-            createdAt: Date.now()
+            date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
           };
-          setTransactions(txs => [autoTx, ...txs]);
+          setTransactions(prev => [autoTx, ...prev]);
         }
-        return { ...bill, isPaid: nextPaid };
+        return { ...b, paid: nextPaid };
       }
-      return bill;
+      return b;
     }));
   };
 
-  // Reset status tagihan rutin untuk awal bulan baru
-  const handleResetMonthlyBills = () => {
-    if (confirm('Ubah semua status tagihan menjadi "Belum Bayar" untuk pembukuan bulan baru?')) {
-      setRegularBills(prev => prev.map(b => ({ ...b, isPaid: false })));
+  const handleDeleteBill = (id: number) => {
+    setBills(bills.filter(b => b.id !== id));
+  };
+
+  const handleResetBillsMonth = () => {
+    if (confirm('Ubah semua status tagihan menjadi belum lunas untuk awal bulan baru?')) {
+      setBills(bills.map(b => ({ ...b, paid: false })));
     }
   };
 
-  // Handler: Tambah Cicilan Berjangka
+  // --- Handlers Cicilan Tenor ---
   const handleAddInstallment = (e: React.FormEvent) => {
     e.preventDefault();
-    setInstError('');
-
     const name = instName.trim();
-    const amount = parseInt(instAmountRaw.replace(/[^0-9]/g, ''), 10);
-    const totalTenor = parseInt(instTotalTenor, 10);
-    const paidTenor = parseInt(instPaidTenor, 10) || 0;
+    const amount = parseFloat(instAmount);
+    const tenor = parseInt(instTenor, 10);
 
-    if (!name) {
-      setInstError('Harap isi nama cicilan.');
-      return;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      setInstError('Harap masukkan nominal cicilan per bulan.');
-      return;
-    }
-    if (isNaN(totalTenor) || totalTenor <= 0) {
-      setInstError('Harap masukkan total tenor bulan (minimal 1).');
-      return;
-    }
-    if (paidTenor > totalTenor) {
-      setInstError('Cicilan terbayar tidak boleh melebihi total tenor.');
-      return;
-    }
+    if (!name || isNaN(amount) || amount <= 0 || isNaN(tenor) || tenor <= 0) return;
 
     const newInst: Installment = {
-      id: 'inst-' + Date.now(),
-      name: name,
-      monthlyAmount: amount,
-      totalTenor: totalTenor,
-      paidTenor: paidTenor,
-      startDate: new Date().toISOString().split('T')[0]
+      id: Date.now(),
+      name,
+      amount,
+      tenor,
+      paidCount: 0
     };
 
     setInstallments([...installments, newInst]);
     setInstName('');
-    setInstAmountRaw('');
-    setInstTotalTenor('6');
-    setInstPaidTenor('0');
+    setInstAmount('');
+    setInstTenor('');
   };
 
-  // Handler: Bayar Cicilan Bulan Ini (Tombol Progress Tracker)
-  const handlePayInstallmentMonth = (id: string) => {
-    setInstallments(prev => prev.map(inst => {
-      if (inst.id === id) {
-        if (inst.paidTenor >= inst.totalTenor) {
-          alert('Cicilan ini sudah lunas sepenuhnya!');
-          return inst;
-        }
-
-        const nextPaid = inst.paidTenor + 1;
-        // Catat otomatis ke pengeluaran
+  const handlePayInstallment = (id: number) => {
+    setInstallments(installments.map(i => {
+      if (i.id === id && i.paidCount < i.tenor) {
+        const nextPaid = i.paidCount + 1;
+        // Catat pengeluaran ke transaksi kas
         const autoTx: Transaction = {
-          id: 'tx-inst-' + Date.now(),
-          description: `Bayar Cicilan: ${inst.name} (${nextPaid}/${inst.totalTenor})`,
-          amount: inst.monthlyAmount,
+          id: Date.now(),
+          desc: `Cicilan: ${i.name} (Ke-${nextPaid}/${i.tenor})`,
+          amount: i.amount,
           type: 'expense',
-          category: 'Cicilan',
-          date: new Date().toISOString().split('T')[0],
-          createdAt: Date.now()
+          date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
         };
-        setTransactions(txs => [autoTx, ...txs]);
-
-        return { ...inst, paidTenor: nextPaid };
+        setTransactions(prev => [autoTx, ...prev]);
+        return { ...i, paidCount: nextPaid };
       }
-      return inst;
+      return i;
     }));
   };
 
-  // Hapus Data Individu
-  const handleDeleteTx = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-    setDeleteConfirmId(null);
-  };
-
-  const handleDeleteBill = (id: string) => {
-    setRegularBills(regularBills.filter(b => b.id !== id));
-  };
-
-  const handleDeleteInstallment = (id: string) => {
+  const handleDeleteInstallment = (id: number) => {
     setInstallments(installments.filter(i => i.id !== id));
   };
 
   // Reset Semua Data
   const handleResetAllData = () => {
     setTransactions([]);
-    setRegularBills([]);
+    setBills([]);
     setInstallments([]);
     setShowResetModal(false);
   };
 
-  // Standalone Single File HTML Generator (100% lengkap siap pakai)
+  // Standalone HTML template dengan judul Budgeting DYT
   const standaloneHtmlCode = useMemo(() => {
     return `<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budgeting DYT</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Font Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budgeting DYT</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 antialiased p-4 md:p-8">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 antialiased">
 
-  <div class="max-w-4xl mx-auto space-y-6">
-
-    <!-- Header Aplikasi -->
-    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-slate-200">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <span>Budgeting DYT</span>
-        </h1>
-        <p class="text-xs md:text-sm text-slate-500 mt-1">Pencatatan kas harian, tagihan rutin bulanan, dan tracker tenor cicilan</p>
-      </div>
-      <div>
-        <button id="btnResetAll" class="px-3.5 py-2 text-xs md:text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-          Reset Semua Data
-        </button>
-      </div>
+    <!-- Header / Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-primary text-white p-2.5 rounded-xl shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">Budgeting DYT</h1>
+                    <p class="text-xs text-slate-500">Buku Kas • Tagihan Rutin • Tracker Cicilan Tenor</p>
+                </div>
+            </div>
+            <button onclick="resetAllData()" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg font-medium hover:bg-rose-100 transition cursor-pointer">
+                Reset Data
+            </button>
+        </div>
     </header>
 
-    <!-- 1. DASHBOARD / 3 KARTU RINGKASAN -->
-    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <!-- Total Pemasukan -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pemasukan</span>
-          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
-          </div>
+    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+
+        <!-- Dashboard Ringkasan (3 Kotak Metrik) -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Pemasukan -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pemasukan</p>
+                        <h3 id="totalIncome" class="text-2xl font-bold text-emerald-600 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-2 rounded-xl text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                    </div>
+                </div>
+                <p id="incomeCount" class="text-xs text-slate-400 mt-3">0 transaksi masuk</p>
+            </div>
+
+            <!-- Pengeluaran -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pengeluaran</p>
+                        <h3 id="totalExpense" class="text-2xl font-bold text-rose-600 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="bg-rose-50 p-2 rounded-xl text-rose-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                    </div>
+                </div>
+                <p id="expenseCount" class="text-xs text-slate-400 mt-3">0 transaksi keluar</p>
+            </div>
+
+            <!-- Saldo -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sisa Saldo</p>
+                        <h3 id="totalBalance" class="text-2xl font-bold text-slate-900 mt-1">Rp 0</h3>
+                    </div>
+                    <div class="bg-indigo-50 p-2 rounded-xl text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    </div>
+                </div>
+                <p id="balanceStatus" class="text-xs text-slate-400 mt-3">Kondisi Kas Aman</p>
+            </div>
+        </section>
+
+        <!-- Form & Riwayat Transaksi -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Input Transaksi -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-fit">
+                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="bg-primary/10 text-primary p-1.5 rounded-lg text-xs">➕</span> Tambah Transaksi
+                </h2>
+                <form id="transactionForm" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan / Sumber</label>
+                        <input type="text" id="desc" required placeholder="Contoh: Gaji, Belanja, Bensin" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
+                        <input type="number" id="amount" required placeholder="Contoh: 500000" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Transaksi</label>
+                        <select id="type" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary cursor-pointer">
+                            <option value="expense">Pengeluaran (Expense)</option>
+                            <option value="income">Pemasukan (Income)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-primary text-white font-medium py-2.5 px-4 rounded-xl text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-100 cursor-pointer">
+                        Simpan Transaksi
+                    </button>
+                </form>
+            </div>
+
+            <!-- List Riwayat Transaksi -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="bg-primary/10 text-primary p-1.5 rounded-lg text-xs">📋</span> Riwayat Transaksi
+                    </h2>
+                    <span id="txCountBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">0 Catatan</span>
+                </div>
+                <div class="overflow-x-auto max-h-[380px] overflow-y-auto pr-1">
+                    <div id="transactionList" class="space-y-2.5">
+                        <!-- Data dimasukkan lewat JavaScript -->
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="totalIncomeDisplay" class="text-xl md:text-2xl font-bold text-emerald-600 mt-2">Rp 0</div>
-        <p class="text-[11px] text-slate-400 mt-1">Total uang masuk tercatat</p>
-      </div>
 
-      <!-- Total Pengeluaran -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pengeluaran</span>
-          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
-          </div>
+        <!-- Bagian Tagihan & Cicilan Tenor -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Tagihan Rutin Bulanan -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="bg-amber-50 text-amber-600 p-1.5 rounded-lg text-xs">💡</span> Tagihan Rutin Bulanan
+                    </h2>
+                    <span id="billSummary" class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium">0 Lunas</span>
+                </div>
+                <form id="billForm" class="flex gap-2 mb-4">
+                    <input type="text" id="billName" placeholder="Nama Tagihan (Listrik, Wifi)" required class="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    <input type="number" id="billAmount" placeholder="Nominal" required class="w-28 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    <button type="submit" class="bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition cursor-pointer">+</button>
+                </form>
+                <div id="billList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1"></div>
+            </div>
+
+            <!-- Tracker Cicilan Berjangka (Tenor) -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg text-xs">⏳</span> Tracker Cicilan Tenor
+                    </h2>
+                    <span id="installmentSummary" class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">0 Aktif</span>
+                </div>
+                <form id="installmentForm" class="space-y-3 mb-4">
+                    <input type="text" id="instName" placeholder="Nama Cicilan (Misal: Cicilan Motor)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="instAmount" placeholder="Nominal / Bulan" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                        <input type="number" id="instTenor" placeholder="Total Tenor (Bulan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition cursor-pointer">Tambah Cicilan</button>
+                </form>
+                <div id="installmentList" class="space-y-3 max-h-[220px] overflow-y-auto pr-1"></div>
+            </div>
         </div>
-        <div id="totalExpenseDisplay" class="text-xl md:text-2xl font-bold text-rose-600 mt-2">Rp 0</div>
-        <p class="text-[11px] text-slate-400 mt-1">Total uang keluar tercatat</p>
-      </div>
 
-      <!-- Sisa Saldo -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sisa Saldo</span>
-          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-          </div>
-        </div>
-        <div id="balanceDisplay" class="text-xl md:text-2xl font-bold text-emerald-600 mt-2">Rp 0</div>
-        <p class="text-[11px] text-slate-400 mt-1">Saldo kas saat ini</p>
-      </div>
-    </section>
+    </main>
 
-    <!-- Navigasi Tab Menu -->
-    <div class="flex p-1 bg-slate-200/70 rounded-xl">
-      <button onclick="switchTab('tx')" id="tabBtnTx" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition bg-white text-slate-900 shadow-sm">
-        💵 Transaksi Keuangan
-      </button>
-      <button onclick="switchTab('bill')" id="tabBtnBill" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition text-slate-600 hover:text-slate-900">
-        📋 Tagihan Rutin
-      </button>
-      <button onclick="switchTab('inst')" id="tabBtnInst" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition text-slate-600 hover:text-slate-900">
-        ⏳ Tracker Cicilan
-      </button>
-    </div>
+    <!-- JavaScript Aplikasi -->
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let bills = JSON.parse(localStorage.getItem('bills')) || [];
+        let installments = JSON.parse(localStorage.getItem('installments')) || [];
 
-    <!-- TAB 1: TRANSAKSI KEUANGAN -->
-    <div id="tabContentTx" class="space-y-6">
-      <!-- Form Input Transaksi -->
-      <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h2 class="text-base sm:text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <span>Catat Transaksi Baru</span>
-        </h2>
-        <form id="txForm" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Keterangan / Sumber</label>
-              <input type="text" id="txDescInput" placeholder="Contoh: Gaji, Makan Siang, Bensin" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nominal (Rp)</label>
-              <input type="number" id="txAmountInput" min="1" placeholder="50000" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipe Transaksi</label>
-              <select id="txTypeSelect" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600 cursor-pointer">
-                <option value="expense">Pengeluaran (Expense)</option>
-                <option value="income">Pemasukan (Income)</option>
-              </select>
-            </div>
-            <div class="flex items-end">
-              <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition duration-150 cursor-pointer">
-                + Tambah Transaksi
-              </button>
-            </div>
-          </div>
-        </form>
-      </section>
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
 
-      <!-- Riwayat Transaksi -->
-      <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-          <h2 class="text-base sm:text-lg font-bold text-slate-900">Riwayat Transaksi</h2>
-          <span id="txCountBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">0 Transaksi</span>
-        </div>
-        <div id="txList" class="divide-y divide-slate-100 space-y-1"></div>
-        <div id="txEmpty" class="hidden text-center py-10 text-slate-400 text-sm">Belum ada catatan transaksi.</div>
-      </section>
-    </div>
+        // --- TRANSAKSI ---
+        document.getElementById('transactionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const desc = document.getElementById('desc').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
 
-    <!-- TAB 2: TAGIHAN RUTIN BULANAN -->
-    <div id="tabContentBill" class="hidden space-y-6">
-      <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h2 class="text-base sm:text-lg font-bold text-slate-900 mb-4">Tambah Tagihan Rutin</h2>
-        <form id="billForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nama Tagihan</label>
-            <input type="text" id="billNameInput" placeholder="Misal: Listrik PLN, WiFi, Kost" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nominal (Rp)</label>
-            <input type="number" id="billAmountInput" min="1" placeholder="350000" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-          </div>
-          <div class="flex items-end">
-            <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition duration-150 cursor-pointer">
-              + Simpan Tagihan
-            </button>
-          </div>
-        </form>
-      </section>
+            if (!desc || isNaN(amount) || amount <= 0) return;
 
-      <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-slate-900">Checklist Tagihan Rutin</h2>
-            <p class="text-xs text-slate-400">Centang kotak untuk menandai lunas & otomatis mencatat pengeluaran</p>
-          </div>
-          <button onclick="resetBillStatus()" class="text-xs text-indigo-600 hover:underline font-semibold cursor-pointer">
-            Reset Status Bulan Baru
-          </button>
-        </div>
-        <div id="billList" class="divide-y divide-slate-100 space-y-2"></div>
-        <div id="billEmpty" class="hidden text-center py-10 text-slate-400 text-sm">Belum ada daftar tagihan rutin.</div>
-      </section>
-    </div>
-
-    <!-- TAB 3: TRACKER CICILAN BERJANGKA -->
-    <div id="tabContentInst" class="hidden space-y-6">
-      <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <h2 class="text-base sm:text-lg font-bold text-slate-900 mb-4">Tambah Cicilan Berjangka Baru</h2>
-        <form id="instForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nama Barang / Cicilan</label>
-            <input type="text" id="instNameInput" placeholder="Contoh: Smartphone, Laptop, Motor" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nominal per Bulan (Rp)</label>
-            <input type="number" id="instAmountInput" min="1" placeholder="500000" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Total Tenor (Bulan)</label>
-            <input type="number" id="instTenorInput" min="1" max="120" placeholder="6" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
-          </div>
-          <div class="sm:col-span-2 md:col-span-4 flex justify-end">
-            <button type="submit" class="w-full sm:w-auto py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition duration-150 cursor-pointer">
-              + Tambah Tracker Cicilan
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div class="mb-4 pb-2 border-b border-slate-100">
-          <h2 class="text-base sm:text-lg font-bold text-slate-900">Daftar Tracker Cicilan Berjangka</h2>
-          <p class="text-xs text-slate-400">Klik "Bayar Cicilan Bulan Ini" untuk mengupdate progres otomatis</p>
-        </div>
-        <div id="instList" class="space-y-4"></div>
-        <div id="instEmpty" class="hidden text-center py-10 text-slate-400 text-sm">Belum ada cicilan berjangka yang dicatat.</div>
-      </section>
-    </div>
-
-  </div>
-
-  <!-- JavaScript Logika Lengkap -->
-  <script>
-    const STORAGE_TX = 'app_tx_v2';
-    const STORAGE_BILLS = 'app_bills_v2';
-    const STORAGE_INST = 'app_inst_v2';
-
-    let transactions = JSON.parse(localStorage.getItem(STORAGE_TX) || '[]');
-    let bills = JSON.parse(localStorage.getItem(STORAGE_BILLS) || '[]');
-    let installments = JSON.parse(localStorage.getItem(STORAGE_INST) || '[]');
-
-    // Inisialisasi Data Demo jika kosong
-    if (transactions.length === 0 && bills.length === 0 && installments.length === 0) {
-      transactions = [
-        { id: '1', desc: 'Gaji Bulanan', amount: 6500000, type: 'income', date: 'Hari ini' },
-        { id: '2', desc: 'Makan & Belanja Harian', amount: 85000, type: 'expense', date: 'Hari ini' }
-      ];
-      bills = [
-        { id: '1', name: 'Listrik PLN Pasca/Token', amount: 350000, isPaid: true },
-        { id: '2', name: 'Internet WiFi IndiHome', amount: 380000, isPaid: false }
-      ];
-      installments = [
-        { id: '1', name: 'Cicilan Smartphone Baru', monthlyAmount: 750000, totalTenor: 6, paidTenor: 2 }
-      ];
-      saveAll();
-    }
-
-    function saveAll() {
-      localStorage.setItem(STORAGE_TX, JSON.stringify(transactions));
-      localStorage.setItem(STORAGE_BILLS, JSON.stringify(bills));
-      localStorage.setItem(STORAGE_INST, JSON.stringify(installments));
-    }
-
-    function formatRupiah(num) {
-      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-    }
-
-    // Tab Navigation
-    function switchTab(tab) {
-      document.getElementById('tabContentTx').classList.toggle('hidden', tab !== 'tx');
-      document.getElementById('tabContentBill').classList.toggle('hidden', tab !== 'bill');
-      document.getElementById('tabContentInst').classList.toggle('hidden', tab !== 'inst');
-
-      const activeClass = 'flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition bg-white text-slate-900 shadow-sm';
-      const inactiveClass = 'flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition text-slate-600 hover:text-slate-900';
-
-      document.getElementById('tabBtnTx').className = tab === 'tx' ? activeClass : inactiveClass;
-      document.getElementById('tabBtnBill').className = tab === 'bill' ? activeClass : inactiveClass;
-      document.getElementById('tabBtnInst').className = tab === 'inst' ? activeClass : inactiveClass;
-    }
-
-    // Update Dashboard (3 Kartu Metrik)
-    function updateDashboard() {
-      let income = 0;
-      let expense = 0;
-      transactions.forEach(t => {
-        if (t.type === 'income') income += Number(t.amount);
-        else if (t.type === 'expense') expense += Number(t.amount);
-      });
-      const balance = income - expense;
-
-      document.getElementById('totalIncomeDisplay').textContent = formatRupiah(income);
-      document.getElementById('totalExpenseDisplay').textContent = formatRupiah(expense);
-      const balEl = document.getElementById('balanceDisplay');
-      balEl.textContent = formatRupiah(balance);
-      balEl.className = 'text-xl md:text-2xl font-bold mt-2 ' + (balance >= 0 ? 'text-emerald-600' : 'text-rose-600');
-    }
-
-    // Render Transaksi
-    function renderTx() {
-      const listEl = document.getElementById('txList');
-      const emptyEl = document.getElementById('txEmpty');
-      listEl.innerHTML = '';
-
-      if (transactions.length === 0) {
-        emptyEl.classList.remove('hidden');
-      } else {
-        emptyEl.classList.add('hidden');
-        transactions.forEach(t => {
-          const isIncome = t.type === 'income';
-          const div = document.createElement('div');
-          div.className = 'py-3 px-2 hover:bg-slate-50 rounded-xl flex items-center justify-between gap-3';
-          div.innerHTML = \`
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs \${isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">
-                \${isIncome ? '↓' : '↑'}
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-slate-800">\${t.desc}</p>
-                <p class="text-[11px] text-slate-400">\${t.date}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-sm font-bold \${isIncome ? 'text-emerald-600' : 'text-rose-600'}">
-                \${isIncome ? '+' : '-'} \${formatRupiah(t.amount)}
-              </span>
-              <button onclick="deleteTx('\${t.id}')" class="p-1 text-slate-300 hover:text-rose-600 transition" title="Hapus">✕</button>
-            </div>
-          \`;
-          listEl.appendChild(div);
-        });
-      }
-      document.getElementById('txCountBadge').textContent = transactions.length + ' Transaksi';
-      updateDashboard();
-    }
-
-    // Render Tagihan Rutin
-    function renderBills() {
-      const listEl = document.getElementById('billList');
-      const emptyEl = document.getElementById('billEmpty');
-      listEl.innerHTML = '';
-
-      if (bills.length === 0) {
-        emptyEl.classList.remove('hidden');
-      } else {
-        emptyEl.classList.add('hidden');
-        bills.forEach(b => {
-          const div = document.createElement('div');
-          div.className = 'py-3 px-3 rounded-xl border border-slate-100 hover:border-slate-200 transition flex items-center justify-between gap-3 ' + (b.isPaid ? 'bg-emerald-50/30' : 'bg-white');
-          div.innerHTML = \`
-            <div class="flex items-center gap-3">
-              <input type="checkbox" onchange="toggleBill('\${b.id}')" \${b.isPaid ? 'checked' : ''} class="w-5 h-5 rounded text-indigo-600 cursor-pointer">
-              <div>
-                <p class="text-sm font-semibold \${b.isPaid ? 'line-through text-slate-400' : 'text-slate-800'}">\${b.name}</p>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full \${b.isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-                  \${b.isPaid ? 'Lunas' : 'Belum Bayar'}
-                </span>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-sm font-bold text-slate-800">\${formatRupiah(b.amount)}</span>
-              <button onclick="deleteBill('\${b.id}')" class="p-1 text-slate-300 hover:text-rose-600" title="Hapus">✕</button>
-            </div>
-          \`;
-          listEl.appendChild(div);
-        });
-      }
-    }
-
-    // Render Cicilan Berjangka
-    function renderInstallments() {
-      const listEl = document.getElementById('instList');
-      const emptyEl = document.getElementById('instEmpty');
-      listEl.innerHTML = '';
-
-      if (installments.length === 0) {
-        emptyEl.classList.remove('hidden');
-      } else {
-        emptyEl.classList.add('hidden');
-        installments.forEach(inst => {
-          const percent = Math.min(100, Math.round((inst.paidTenor / inst.totalTenor) * 100));
-          const isFinished = inst.paidTenor >= inst.totalTenor;
-
-          const div = document.createElement('div');
-          div.className = 'p-4 rounded-xl border border-slate-200/90 bg-white shadow-xs space-y-3';
-          div.innerHTML = \`
-            <div class="flex items-start justify-between gap-2">
-              <div>
-                <h4 class="text-sm font-bold text-slate-900">\${inst.name}</h4>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">\${formatRupiah(inst.monthlyAmount)} / bulan</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full \${isFinished ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'}">
-                  \${isFinished ? '🎉 Lunas' : \`Cicilan ke-\${inst.paidTenor} dari \${inst.totalTenor}\`}
-                </span>
-                <button onclick="deleteInstallment('\${inst.id}')" class="text-slate-300 hover:text-rose-600 p-1" title="Hapus">✕</button>
-              </div>
-            </div>
-
-            <!-- Progress Bar -->
-            <div>
-              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-300 \${isFinished ? 'bg-emerald-500' : 'bg-indigo-600'}" style="width: \${percent}%"></div>
-              </div>
-              <div class="flex justify-between items-center text-[11px] text-slate-400 mt-1">
-                <span>Progress: \${percent}%</span>
-                <span>Sisa: \${Math.max(0, inst.totalTenor - inst.paidTenor)} bulan</span>
-              </div>
-            </div>
-
-            <!-- Tombol Aksi Bayar -->
-            <div class="pt-1 flex justify-end">
-              <button 
-                onclick="payInstallmentMonth('\${inst.id}')" 
-                \${isFinished ? 'disabled' : ''}
-                class="px-4 py-2 text-xs font-semibold rounded-lg transition duration-150 flex items-center gap-1.5 cursor-pointer \${
-                  isFinished 
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
-                }"
-              >
-                \${isFinished ? '✓ Sudah Lunas' : '✓ Bayar Cicilan Bulan Ini'}
-              </button>
-            </div>
-          \`;
-          listEl.appendChild(div);
-        });
-      }
-    }
-
-    // Handlers Transaksi
-    document.getElementById('txForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const desc = document.getElementById('txDescInput').value.trim();
-      const amount = Number(document.getElementById('txAmountInput').value);
-      const type = document.getElementById('txTypeSelect').value;
-
-      if (!desc || amount <= 0) return;
-
-      const newTx = {
-        id: Date.now().toString(),
-        desc,
-        amount,
-        type,
-        date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-      };
-      transactions.unshift(newTx);
-      saveAll();
-      renderTx();
-
-      document.getElementById('txDescInput').value = '';
-      document.getElementById('txAmountInput').value = '';
-    });
-
-    window.deleteTx = function(id) {
-      transactions = transactions.filter(t => t.id !== id);
-      saveAll();
-      renderTx();
-    };
-
-    // Handlers Tagihan
-    document.getElementById('billForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const name = document.getElementById('billNameInput').value.trim();
-      const amount = Number(document.getElementById('billAmountInput').value);
-
-      if (!name || amount <= 0) return;
-
-      bills.push({ id: Date.now().toString(), name, amount, isPaid: false });
-      saveAll();
-      renderBills();
-
-      document.getElementById('billNameInput').value = '';
-      document.getElementById('billAmountInput').value = '';
-    });
-
-    window.toggleBill = function(id) {
-      bills = bills.map(b => {
-        if (b.id === id) {
-          const next = !b.isPaid;
-          if (next) {
-            // Otomatis catat ke pengeluaran
-            transactions.unshift({
-              id: Date.now().toString(),
-              desc: 'Tagihan: ' + b.name,
-              amount: b.amount,
-              type: 'expense',
-              date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+            transactions.unshift({ 
+                id: Date.now(), 
+                desc, 
+                amount, 
+                type, 
+                date: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) 
             });
-            renderTx();
-          }
-          return { ...b, isPaid: next };
+            saveAndRender();
+            this.reset();
+        });
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveAndRender();
         }
-        return b;
-      });
-      saveAll();
-      renderBills();
-    };
 
-    window.deleteBill = function(id) {
-      bills = bills.filter(b => b.id !== id);
-      saveAll();
-      renderBills();
-    };
+        // --- TAGIHAN RUTIN ---
+        document.getElementById('billForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('billName').value.trim();
+            const amount = parseFloat(document.getElementById('billAmount').value);
 
-    window.resetBillStatus = function() {
-      if (confirm('Reset semua tagihan menjadi belum bayar untuk awal bulan baru?')) {
-        bills = bills.map(b => ({ ...b, isPaid: false }));
-        saveAll();
-        renderBills();
-      }
-    };
+            if (!name || isNaN(amount) || amount <= 0) return;
 
-    // Handlers Cicilan
-    document.getElementById('instForm').addEventListener('submit', e => {
-      e.preventDefault();
-      const name = document.getElementById('instNameInput').value.trim();
-      const monthlyAmount = Number(document.getElementById('instAmountInput').value);
-      const totalTenor = Number(document.getElementById('instTenorInput').value);
+            bills.push({ id: Date.now(), name, amount, paid: false });
+            saveAndRender();
+            this.reset();
+        });
 
-      if (!name || monthlyAmount <= 0 || totalTenor <= 0) return;
-
-      installments.push({
-        id: Date.now().toString(),
-        name,
-        monthlyAmount,
-        totalTenor,
-        paidTenor: 0
-      });
-      saveAll();
-      renderInstallments();
-
-      document.getElementById('instNameInput').value = '';
-      document.getElementById('instAmountInput').value = '';
-      document.getElementById('instTenorInput').value = '';
-    });
-
-    window.payInstallmentMonth = function(id) {
-      installments = installments.map(inst => {
-        if (inst.id === id) {
-          if (inst.paidTenor >= inst.totalTenor) return inst;
-          const next = inst.paidTenor + 1;
-          // Otomatis catat ke pengeluaran
-          transactions.unshift({
-            id: Date.now().toString(),
-            desc: \`Cicilan: \${inst.name} (\${next}/\${inst.totalTenor})\`,
-            amount: inst.monthlyAmount,
-            type: 'expense',
-            date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-          });
-          renderTx();
-          return { ...inst, paidTenor: next };
+        function toggleBill(id) {
+            bills = bills.map(b => {
+                if (b.id === id) {
+                    const next = !b.paid;
+                    if (next) {
+                        transactions.unshift({
+                            id: Date.now(),
+                            desc: 'Tagihan: ' + b.name,
+                            amount: b.amount,
+                            type: 'expense',
+                            date: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})
+                        });
+                    }
+                    return { ...b, paid: next };
+                }
+                return b;
+            });
+            saveAndRender();
         }
-        return inst;
-      });
-      saveAll();
-      renderInstallments();
-    };
 
-    window.deleteInstallment = function(id) {
-      installments = installments.filter(i => i.id !== id);
-      saveAll();
-      renderInstallments();
-    };
+        function deleteBill(id) {
+            bills = bills.filter(b => b.id !== id);
+            saveAndRender();
+        }
 
-    // Reset Semua
-    document.getElementById('btnResetAll').addEventListener('click', () => {
-      if (confirm('Hapus seluruh data transaksi, tagihan, dan cicilan? Tindakan ini tidak dapat dibatalkan.')) {
-        transactions = [];
-        bills = [];
-        installments = [];
-        saveAll();
-        renderTx();
-        renderBills();
-        renderInstallments();
-      }
-    });
+        // --- CICILAN TENOR ---
+        document.getElementById('installmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('instName').value.trim();
+            const amount = parseFloat(document.getElementById('instAmount').value);
+            const tenor = parseInt(document.getElementById('instTenor').value);
 
-    // Inisialisasi awal
-    renderTx();
-    renderBills();
-    renderInstallments();
-  </script>
+            if (!name || isNaN(amount) || amount <= 0 || isNaN(tenor) || tenor <= 0) return;
+
+            installments.push({ id: Date.now(), name, amount, tenor, paidCount: 0 });
+            saveAndRender();
+            this.reset();
+        });
+
+        function payInstallment(id) {
+            installments = installments.map(i => {
+                if (i.id === id && i.paidCount < i.tenor) {
+                    const next = i.paidCount + 1;
+                    transactions.unshift({
+                        id: Date.now(),
+                        desc: \`Cicilan: \${i.name} (Ke-\${next}/\${i.tenor})\`,
+                        amount: i.amount,
+                        type: 'expense',
+                        date: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})
+                    });
+                    return { ...i, paidCount: next };
+                }
+                return i;
+            });
+            saveAndRender();
+        }
+
+        function deleteInstallment(id) {
+            installments = installments.filter(i => i.id !== id);
+            saveAndRender();
+        }
+
+        function resetAllData() {
+            if(confirm('Yakin ingin mereset seluruh data catatan?')) {
+                transactions = [];
+                bills = [];
+                installments = [];
+                saveAndRender();
+            }
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            localStorage.setItem('bills', JSON.stringify(bills));
+            localStorage.setItem('installments', JSON.stringify(installments));
+            render();
+        }
+
+        function render() {
+            // Dashboard Calculation
+            let totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            let totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            let balance = totalIncome - totalExpense;
+
+            document.getElementById('totalIncome').innerText = formatRupiah(totalIncome);
+            document.getElementById('incomeCount').innerText = \`\${transactions.filter(t => t.type === 'income').length} transaksi masuk\`;
+
+            document.getElementById('totalExpense').innerText = formatRupiah(totalExpense);
+            document.getElementById('expenseCount').innerText = \`\${transactions.filter(t => t.type === 'expense').length} transaksi keluar\`;
+
+            const balEl = document.getElementById('totalBalance');
+            balEl.innerText = formatRupiah(balance);
+            balEl.className = \`text-2xl font-bold mt-1 \${balance < 0 ? 'text-rose-600' : 'text-slate-900'}\`;
+
+            const balStatus = document.getElementById('balanceStatus');
+            balStatus.innerText = balance < 0 ? 'Perhatian: Defisit Pengeluaran' : 'Kondisi Kas Sehat';
+
+            // Render Transactions
+            const txList = document.getElementById('transactionList');
+            const txBadge = document.getElementById('txCountBadge');
+            if (txBadge) txBadge.innerText = \`\${transactions.length} Catatan\`;
+
+            if (transactions.length === 0) {
+                txList.innerHTML = \`<p class="text-xs text-slate-400 text-center py-6">Belum ada catatan transaksi.</p>\`;
+            } else {
+                txList.innerHTML = transactions.map(t => \`
+                    <div class="flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800">\${t.desc}</p>
+                            <p class="text-[11px] text-slate-400">\${t.date}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-bold \${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
+                                \${t.type === 'income' ? '+' : '-'} \${formatRupiah(t.amount)}
+                            </span>
+                            <button onclick="deleteTransaction(\${t.id})" class="text-slate-300 hover:text-rose-500 text-xs px-1.5 py-1 cursor-pointer">✕</button>
+                        </div>
+                    </div>
+                \`).join('');
+            }
+
+            // Render Bills
+            const billList = document.getElementById('billList');
+            let paidBillsCount = bills.filter(b => b.paid).length;
+            document.getElementById('billSummary').innerText = \`\${paidBillsCount}/\${bills.length} Lunas\`;
+
+            if (bills.length === 0) {
+                billList.innerHTML = \`<p class="text-xs text-slate-400 text-center py-4">Belum ada tagihan rutin.</p>\`;
+            } else {
+                billList.innerHTML = bills.map(b => \`
+                    <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl">
+                        <label class="flex items-center gap-2.5 cursor-pointer flex-1">
+                            <input type="checkbox" \${b.paid ? 'checked' : ''} onclick="toggleBill(\${b.id})" class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+                            <span class="text-sm \${b.paid ? 'line-through text-slate-400 font-normal' : 'text-slate-700 font-medium'}">\${b.name}</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-600">\${formatRupiah(b.amount)}</span>
+                            <button onclick="deleteBill(\${b.id})" class="text-slate-300 hover:text-rose-500 text-xs cursor-pointer">✕</button>
+                        </div>
+                    </div>
+                \`).join('');
+            }
+
+            // Render Installments
+            const instList = document.getElementById('installmentList');
+            document.getElementById('installmentSummary').innerText = \`\${installments.length} Aktif\`;
+
+            if (installments.length === 0) {
+                instList.innerHTML = \`<p class="text-xs text-slate-400 text-center py-4">Belum ada cicilan tenor.</p>\`;
+            } else {
+                instList.innerHTML = installments.map(i => {
+                    let progressPercent = Math.min(100, Math.round((i.paidCount / i.tenor) * 100));
+                    let isCompleted = i.paidCount >= i.tenor;
+                    return \`
+                        <div class="p-3 bg-slate-50 rounded-xl space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-semibold text-slate-800">\${i.name}</span>
+                                <button onclick="deleteInstallment(\${i.id})" class="text-slate-300 hover:text-rose-500 text-xs cursor-pointer">✕</button>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500">
+                                <span>Cicilan ke-<b>\${i.paidCount}</b> dari \${i.tenor}</span>
+                                <span class="font-semibold text-indigo-600">\${formatRupiah(i.amount)}/bln</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div class="bg-indigo-600 h-full transition-all duration-300" style="width: \${progressPercent}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="text-[11px] text-slate-400">\${isCompleted ? '🎉 Lunas' : progressPercent + '% Selesai'}</span>
+                                \${!isCompleted ? \`<button onclick="payInstallment(\${i.id})" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg font-medium hover:bg-indigo-100 transition cursor-pointer">Bayar Bulan Ini</button>\` : '<span class="text-xs text-emerald-600 font-bold">Lunas Sempurna</span>'}
+                            </div>
+                        </div>
+                    \`;
+                }).join('');
+            }
+        }
+
+        render();
+    </script>
 </body>
 </html>`;
   }, []);
@@ -1007,719 +721,430 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'buku-kas-tagihan-cicilan.html';
+    a.download = 'budgeting-dyt.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 antialiased pb-16">
-      {/* Top Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-xs">
-              <Wallet className="w-5 h-5" />
+    <div className="bg-slate-50 text-slate-800 min-h-screen pb-12 antialiased">
+      {/* Header / Navbar */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md flex items-center justify-center">
+              <Wallet className="h-6 w-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">Budgeting DYT</span>
+                <h1 className="text-lg font-bold text-slate-900 leading-tight">Budgeting DYT</h1>
                 <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full uppercase">
                   Personal
                 </span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block">Buku Kas • Tagihan Rutin • Tracker Cicilan Tenor</p>
+              <p className="text-xs text-slate-500">Buku Kas • Tagihan Rutin • Tracker Cicilan Tenor</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCodeModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition cursor-pointer"
-              title="Lihat Kode HTML 1 File Standalone"
+              className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer"
+              title="Salin File HTML Tunggal"
             >
-              <Code2 className="w-4 h-4" />
+              <Code2 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Kode HTML 1 File</span>
             </button>
 
             <button
               onClick={() => setShowResetModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/80 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition cursor-pointer"
-              title="Reset Semua Data"
+              className="text-xs bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg font-medium hover:bg-rose-100 transition cursor-pointer"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset</span>
+              Reset Data
             </button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 mt-6 space-y-6">
 
-        {/* 1. DASHBOARD / 3 KARTU RINGKASAN */}
-        <section aria-label="Ringkasan Saldo" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Total Pemasukan */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-sm transition relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pemasukan</span>
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5" />
+        {/* Dashboard Ringkasan (3 Kotak Metrik) */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Pemasukan */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pemasukan</p>
+                <h3 className="text-2xl font-bold text-emerald-600 mt-1">{formatRupiah(totalIncome)}</h3>
+              </div>
+              <div className="bg-emerald-50 p-2 rounded-xl text-emerald-600">
+                <TrendingUp className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-bold text-emerald-600 tracking-tight">
-                {formatRupiah(totalIncome)}
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                {transactions.filter(t => t.type === 'income').length} transaksi masuk
-              </p>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity" />
+            <p className="text-xs text-slate-400 mt-3">{incomeTxCount} transaksi masuk</p>
           </div>
 
-          {/* Total Pengeluaran */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-sm transition relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Pengeluaran</span>
-              <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                <TrendingDown className="w-5 h-5" />
+          {/* Pengeluaran */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pengeluaran</p>
+                <h3 className="text-2xl font-bold text-rose-600 mt-1">{formatRupiah(totalExpense)}</h3>
+              </div>
+              <div className="bg-rose-50 p-2 rounded-xl text-rose-600">
+                <TrendingDown className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-bold text-rose-600 tracking-tight">
-                {formatRupiah(totalExpense)}
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                {transactions.filter(t => t.type === 'expense').length} transaksi keluar
-              </p>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500 opacity-20 group-hover:opacity-100 transition-opacity" />
+            <p className="text-xs text-slate-400 mt-3">{expenseTxCount} transaksi keluar</p>
           </div>
 
-          {/* Sisa Saldo */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-sm transition relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Sisa Saldo</span>
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <Wallet className="w-5 h-5" />
+          {/* Saldo */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Sisa Saldo</p>
+                <h3 className={`text-2xl font-bold mt-1 ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                  {formatRupiah(balance)}
+                </h3>
+              </div>
+              <div className="bg-indigo-50 p-2 rounded-xl text-indigo-600">
+                <Wallet className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-3">
-              <h3 className={`text-2xl font-bold tracking-tight ${balance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {formatRupiah(balance)}
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                {balance >= 0 ? 'Kondisi Kas Sehat' : 'Defisit Pengeluaran'}
-              </p>
-            </div>
-            <div className={`absolute bottom-0 left-0 right-0 h-1 ${balance >= 0 ? 'bg-emerald-500' : 'bg-rose-500'} opacity-20 group-hover:opacity-100 transition-opacity`} />
+            <p className="text-xs text-slate-400 mt-3">
+              {balance < 0 ? 'Perhatian: Defisit Pengeluaran' : 'Kondisi Kas Sehat'}
+            </p>
           </div>
         </section>
 
-        {/* Ringkasan Beban Rutin & Cicilan Bulan Ini */}
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-4 sm:p-5 text-white shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">Tanggungan Rutin Bulan Ini</span>
-            </div>
-            <p className="text-xs text-slate-300">
-              Tagihan belum dibayar: <strong className="text-amber-300">{formatRupiah(unpaidBillsTotal)}</strong> • Cicilan aktif: <strong className="text-indigo-300">{formatRupiah(activeInstallmentsTotal)}/bln</strong>
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('tagihan')}
-              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-semibold transition cursor-pointer"
-            >
-              Lihat Tagihan
-            </button>
-            <button
-              onClick={() => setActiveTab('cicilan')}
-              className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-xs font-semibold transition cursor-pointer"
-            >
-              Lihat Cicilan
-            </button>
-          </div>
-        </div>
-
-        {/* TAB NAVIGATION SELECTOR */}
-        <div className="flex p-1 bg-slate-200/80 rounded-2xl shadow-inner">
-          <button
-            onClick={() => setActiveTab('transaksi')}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'transaksi'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Wallet className="w-4 h-4 text-indigo-600" />
-            <span>Transaksi Kas</span>
-            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-600">
-              {transactions.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('tagihan')}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'tagihan'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Receipt className="w-4 h-4 text-emerald-600" />
-            <span>Tagihan Rutin</span>
-            {regularBills.filter(b => !b.isPaid).length > 0 && (
-              <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
-                {regularBills.filter(b => !b.isPaid).length} Belum
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('cicilan')}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'cicilan'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Clock className="w-4 h-4 text-indigo-600" />
-            <span>Tracker Cicilan</span>
-            <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
-              {installments.length}
-            </span>
-          </button>
-        </div>
-
-        {/* ======================================================== */}
-        {/* TAB 1: TRANSAKSI KEUANGAN                                */}
-        {/* ======================================================== */}
-        {activeTab === 'transaksi' && (
-          <div className="space-y-6">
-            {/* Form Input Transaksi */}
-            <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-indigo-600" />
-                    Catat Transaksi Baru
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Input pemasukan atau pengeluaran harian Anda</p>
-                </div>
-
-                <div className="inline-flex p-1 bg-slate-100 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setTxType('expense')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                      txType === 'expense' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <TrendingDown className="w-3.5 h-3.5" />
-                    Pengeluaran
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTxType('income')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                      txType === 'income' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    Pemasukan
-                  </button>
-                </div>
+        {/* Form & Riwayat Transaksi (Side-by-side) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form Input Transaksi */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-fit">
+            <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="bg-indigo-50 text-indigo-600 p-1.5 rounded-lg text-xs">➕</span> Tambah Transaksi
+            </h2>
+            <form onSubmit={handleAddTransaction} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Keterangan / Sumber</label>
+                <input
+                  type="text"
+                  value={txDesc}
+                  onChange={(e) => setTxDesc(e.target.value)}
+                  required
+                  placeholder="Contoh: Gaji, Belanja, Bensin"
+                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600 transition"
+                />
               </div>
-
-              {txError && (
-                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{txError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAddTransaction} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  <div className="md:col-span-6">
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                      Keterangan / Sumber
-                    </label>
-                    <input
-                      type="text"
-                      value={txDesc}
-                      onChange={(e) => setTxDesc(e.target.value)}
-                      placeholder={txType === 'income' ? 'Contoh: Gaji, Bonus, Freelance' : 'Contoh: Makan Siang, Bensin, Belanja'}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                      required
-                    />
-                  </div>
-
-                  <div className="md:col-span-6">
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                      Nominal (Rp)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">Rp</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={txAmountRaw}
-                        onChange={(e) => setTxAmountRaw(e.target.value)}
-                        placeholder="50000"
-                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                  <div className="md:col-span-6 flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Tanggal:</span>
-                    <input
-                      type="date"
-                      value={txDate}
-                      onChange={(e) => setTxDate(e.target.value)}
-                      className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-6">
-                    <button
-                      type="submit"
-                      className={`w-full py-2.5 px-4 font-semibold text-white rounded-xl shadow-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer ${
-                        txType === 'expense' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                      }`}
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      <span>Simpan Transaksi {txType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}</span>
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </section>
-
-            {/* Riwayat Transaksi */}
-            <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900">Riwayat Transaksi</h2>
-                  <p className="text-xs text-slate-400">Urut dari transaksi paling baru</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-semibold">
-                    <button
-                      onClick={() => setFilterType('all')}
-                      className={`px-2.5 py-1 rounded-lg ${filterType === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'}`}
-                    >
-                      Semua
-                    </button>
-                    <button
-                      onClick={() => setFilterType('income')}
-                      className={`px-2.5 py-1 rounded-lg ${filterType === 'income' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-600'}`}
-                    >
-                      Pemasukan
-                    </button>
-                    <button
-                      onClick={() => setFilterType('expense')}
-                      className={`px-2.5 py-1 rounded-lg ${filterType === 'expense' ? 'bg-white text-rose-700 shadow-xs' : 'text-slate-600'}`}
-                    >
-                      Pengeluaran
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchTx}
-                      onChange={(e) => setSearchTx(e.target.value)}
-                      placeholder="Cari..."
-                      className="pl-7 pr-2.5 py-1 bg-slate-50 border border-slate-200 rounded-xl text-xs w-28 sm:w-36 focus:outline-none"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={txAmount}
+                  onChange={(e) => setTxAmount(e.target.value)}
+                  required
+                  placeholder="Contoh: 500000"
+                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600 transition"
+                />
               </div>
-
-              {filteredTransactions.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <div className="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <AlertCircle className="w-7 h-7" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-slate-700">Belum ada catatan transaksi</h3>
-                  <p className="text-xs text-slate-400 mt-1">Masukkan transaksi baru melalui form di atas.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 mt-2">
-                  {filteredTransactions.map((tx) => {
-                    const isIncome = tx.type === 'income';
-                    const isConfirming = deleteConfirmId === tx.id;
-
-                    return (
-                      <div key={tx.id} className="py-3 px-2 hover:bg-slate-50 rounded-xl transition flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center ${isIncome ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                            {isIncome ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{tx.description}</p>
-                            <p className="text-[11px] text-slate-400">{tx.date}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          <span className={`text-sm sm:text-base font-bold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {isIncome ? '+' : '-'} {formatRupiah(tx.amount)}
-                          </span>
-
-                          {isConfirming ? (
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleDeleteTx(tx.id)}
-                                className="px-2 py-0.5 text-xs bg-rose-600 text-white rounded font-medium cursor-pointer"
-                              >
-                                Ya
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmId(null)}
-                                className="px-2 py-0.5 text-xs bg-slate-200 text-slate-700 rounded cursor-pointer"
-                              >
-                                Batal
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setDeleteConfirmId(tx.id)}
-                              className="p-1.5 text-slate-300 hover:text-rose-600 rounded-lg cursor-pointer transition"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Tipe Transaksi</label>
+                <select
+                  value={txType}
+                  onChange={(e) => setTxType(e.target.value as 'income' | 'expense')}
+                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600 transition cursor-pointer"
+                >
+                  <option value="expense">Pengeluaran (Expense)</option>
+                  <option value="income">Pemasukan (Income)</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-100 cursor-pointer"
+              >
+                Simpan Transaksi
+              </button>
+            </form>
           </div>
-        )}
 
-        {/* ======================================================== */}
-        {/* TAB 2: CHECKLIST TAGIHAN RUTIN                           */}
-        {/* ======================================================== */}
-        {activeTab === 'tagihan' && (
-          <div className="space-y-6">
-            {/* Form Tambah Tagihan Rutin */}
-            <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-indigo-600" />
-                Tambah Tagihan Rutin Bulanan
+          {/* List Riwayat Transaksi */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span className="bg-indigo-50 text-indigo-600 p-1.5 rounded-lg text-xs">📋</span> Riwayat Transaksi
               </h2>
 
-              {billError && (
-                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{billError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAddRegularBill} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                    Nama Tagihan
-                  </label>
-                  <input
-                    type="text"
-                    value={billName}
-                    onChange={(e) => setBillName(e.target.value)}
-                    placeholder="Misal: Listrik PLN, WiFi, Kost, Asuransi"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                    Nominal Tagihan (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={billAmountRaw}
-                    onChange={(e) => setBillAmountRaw(e.target.value)}
-                    placeholder="350000"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-600"
-                    required
-                  />
-                </div>
-
-                <div className="flex items-end">
+              {/* Filter Buttons & Search */}
+              <div className="flex items-center gap-2">
+                <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-medium">
                   <button
-                    type="submit"
-                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2"
+                    type="button"
+                    onClick={() => setTxFilter('all')}
+                    className={`px-2 py-0.5 rounded-md ${txFilter === 'all' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-500'}`}
                   >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Tambah ke Daftar</span>
+                    Semua
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTxFilter('income')}
+                    className={`px-2 py-0.5 rounded-md ${txFilter === 'income' ? 'bg-white text-emerald-700 shadow-xs font-semibold' : 'text-slate-500'}`}
+                  >
+                    Masuk
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTxFilter('expense')}
+                    className={`px-2 py-0.5 rounded-md ${txFilter === 'expense' ? 'bg-white text-rose-700 shadow-xs font-semibold' : 'text-slate-500'}`}
+                  >
+                    Keluar
                   </button>
                 </div>
-              </form>
-            </section>
 
-            {/* Checklist Tagihan */}
-            <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900">Checklist Tagihan Bulan Ini</h2>
-                  <p className="text-xs text-slate-400">
-                    Centang kotak untuk menandai Lunas (otomatis dicatat ke riwayat pengeluaran kas)
-                  </p>
+                <div className="relative">
+                  <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari..."
+                    className="pl-6 pr-2 py-0.5 bg-slate-50 border border-slate-200 rounded-lg text-xs w-24 sm:w-32 focus:outline-none"
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetMonthlyBills}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
-                >
-                  Reset Status ke Belum Bayar
-                </button>
               </div>
+            </div>
 
-              {regularBills.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <p className="text-xs text-slate-400">Belum ada tagihan rutin yang dimasukkan.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 mt-2 space-y-1">
-                  {regularBills.map((b) => (
+            <div className="overflow-x-auto max-h-[380px] overflow-y-auto pr-1">
+              <div className="space-y-2.5">
+                {filteredTransactions.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-8">Belum ada catatan transaksi.</p>
+                ) : (
+                  filteredTransactions.map((t) => (
                     <div
-                      key={b.id}
-                      className={`py-3.5 px-3 rounded-xl border transition flex items-center justify-between gap-3 ${
-                        b.isPaid ? 'bg-emerald-50/40 border-emerald-100' : 'bg-white border-slate-100 hover:border-slate-200'
-                      }`}
+                      key={t.id}
+                      className="flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition"
                     >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={b.isPaid}
-                          onChange={() => handleToggleBillStatus(b.id)}
-                          className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        />
-                        <div>
-                          <p className={`text-sm font-bold ${b.isPaid ? 'line-through text-slate-400' : 'text-slate-800'}`}>
-                            {b.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              b.isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}>
-                              {b.isPaid ? '✓ Sudah Lunas' : 'Belum Dibayar'}
-                            </span>
-                            <span className="text-[11px] text-slate-400">{b.dueDate}</span>
-                          </div>
-                        </div>
+                      <div className="min-w-0 pr-2">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{t.desc}</p>
+                        <p className="text-[11px] text-slate-400">{t.date}</p>
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-slate-800">{formatRupiah(b.amount)}</span>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span
+                          className={`text-sm font-bold ${
+                            t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
+                          }`}
+                        >
+                          {t.type === 'income' ? '+' : '-'} {formatRupiah(t.amount)}
+                        </span>
                         <button
-                          onClick={() => handleDeleteBill(b.id)}
-                          className="p-1.5 text-slate-300 hover:text-rose-600 rounded-lg cursor-pointer transition"
+                          onClick={() => handleDeleteTransaction(t.id)}
+                          className="text-slate-300 hover:text-rose-500 text-xs px-1.5 py-1 transition cursor-pointer"
                           title="Hapus"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          ✕
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* TAB 3: TRACKER CICILAN BERJANGKA (INSTALLMENT TRACKER)    */}
-        {/* ======================================================== */}
-        {activeTab === 'cicilan' && (
-          <div className="space-y-6">
-            {/* Form Tambah Cicilan Berjangka */}
-            <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-indigo-600" />
-                Tambah Cicilan Berjangka (Tenor)
-              </h2>
-
-              {instError && (
-                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{instError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAddInstallment} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                    Nama Barang / Tagihan
-                  </label>
-                  <input
-                    type="text"
-                    value={instName}
-                    onChange={(e) => setInstName(e.target.value)}
-                    placeholder="Contoh: Smartphone, Laptop, Kulkas"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                    Nominal per Bulan (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={instAmountRaw}
-                    onChange={(e) => setInstAmountRaw(e.target.value)}
-                    placeholder="500000"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-600"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                    Total Tenor (Bulan)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="120"
-                    value={instTotalTenor}
-                    onChange={(e) => setInstTotalTenor(e.target.value)}
-                    placeholder="6"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:border-indigo-600"
-                    required
-                  />
-                </div>
-
-                <div className="sm:col-span-2 md:col-span-4 flex justify-end">
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Simpan Tracker Cicilan</span>
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            {/* List Tracker Cicilan Berjangka */}
-            <section className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
-              <div className="mb-4 pb-2 border-b border-slate-100">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">Daftar Tracker Cicilan</h2>
-                <p className="text-xs text-slate-400">
-                  Pantau progres tenor dan klik tombol "Bayar Cicilan Bulan Ini" untuk mengupdate progres secara otomatis
-                </p>
+                  ))
+                )}
               </div>
-
-              {installments.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <p className="text-xs text-slate-400">Belum ada cicilan bertenor yang tercatat.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {installments.map((inst) => {
-                    const percent = Math.min(100, Math.round((inst.paidTenor / inst.totalTenor) * 100));
-                    const isFinished = inst.paidTenor >= inst.totalTenor;
-                    const remainingMonths = Math.max(0, inst.totalTenor - inst.paidTenor);
-                    const remainingAmount = remainingMonths * inst.monthlyAmount;
-
-                    return (
-                      <div
-                        key={inst.id}
-                        className="p-5 rounded-2xl border border-slate-200/90 bg-white shadow-xs space-y-4 hover:border-indigo-200 transition"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-base font-bold text-slate-900">{inst.name}</h3>
-                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                                isFinished ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                              }`}>
-                                {isFinished ? '🎉 Lunas' : `Cicilan ke-${inst.paidTenor} dari ${inst.totalTenor}`}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Nominal: <strong className="text-slate-800">{formatRupiah(inst.monthlyAmount)}</strong> / bulan • Sisa tagihan: <strong className="text-rose-600">{formatRupiah(remainingAmount)}</strong>
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-2 self-end sm:self-auto">
-                            <button
-                              onClick={() => handleDeleteInstallment(inst.id)}
-                              className="p-1.5 text-slate-300 hover:text-rose-600 rounded-lg transition cursor-pointer"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Progress Bar Visual */}
-                        <div className="space-y-1.5">
-                          <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-300 ${
-                                isFinished ? 'bg-emerald-500' : 'bg-indigo-600'
-                              }`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span>Progres Terbayar: {percent}%</span>
-                            <span>{remainingMonths === 0 ? 'Semua bulan telah lunas!' : `Sisa: ${remainingMonths} bulan lagi`}</span>
-                          </div>
-                        </div>
-
-                        {/* Action Bayar Cicilan Bulan Ini */}
-                        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100">
-                          <span className="text-xs text-slate-400">
-                            {isFinished ? 'Cicilan ini telah selesai dibayar.' : 'Klik saat Anda telah membayar cicilan periode bulan ini.'}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => handlePayInstallmentMonth(inst.id)}
-                            disabled={isFinished}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                              isFinished
-                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                            }`}
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>{isFinished ? 'Sudah Lunas' : 'Bayar Cicilan Bulan Ini'}</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Bagian Tagihan & Cicilan Tenor (Side-by-side) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Tagihan Rutin Bulanan */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span className="bg-amber-50 text-amber-600 p-1.5 rounded-lg text-xs">💡</span> Tagihan Rutin Bulanan
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium">
+                  {paidBillsCount}/{bills.length} Lunas
+                </span>
+                {bills.length > 0 && (
+                  <button
+                    onClick={handleResetBillsMonth}
+                    className="text-[11px] text-indigo-600 hover:underline cursor-pointer"
+                    title="Ubah semua jadi belum bayar untuk awal bulan baru"
+                  >
+                    Reset Bulan
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <form onSubmit={handleAddBill} className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={billName}
+                onChange={(e) => setBillName(e.target.value)}
+                placeholder="Nama Tagihan (Listrik, Wifi)"
+                required
+                className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600"
+              />
+              <input
+                type="number"
+                min="1"
+                value={billAmount}
+                onChange={(e) => setBillAmount(e.target.value)}
+                placeholder="Nominal"
+                required
+                className="w-28 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600"
+              />
+              <button
+                type="submit"
+                className="bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition cursor-pointer"
+              >
+                +
+              </button>
+            </form>
+
+            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+              {bills.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">Belum ada tagihan rutin.</p>
+              ) : (
+                bills.map((b) => (
+                  <div key={b.id} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl">
+                    <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0 pr-2">
+                      <input
+                        type="checkbox"
+                        checked={b.paid}
+                        onChange={() => handleToggleBill(b.id)}
+                        className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
+                      />
+                      <span
+                        className={`text-sm truncate ${
+                          b.paid ? 'line-through text-slate-400 font-normal' : 'text-slate-700 font-medium'
+                        }`}
+                      >
+                        {b.name}
+                      </span>
+                    </label>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs font-semibold text-slate-600">{formatRupiah(b.amount)}</span>
+                      <button
+                        onClick={() => handleDeleteBill(b.id)}
+                        className="text-slate-300 hover:text-rose-500 text-xs px-1 cursor-pointer"
+                        title="Hapus"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Tracker Cicilan Berjangka (Tenor) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span className="bg-blue-50 text-blue-600 p-1.5 rounded-lg text-xs">⏳</span> Tracker Cicilan Tenor
+              </h2>
+              <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">
+                {activeInstallmentsCount} Aktif
+              </span>
+            </div>
+
+            <form onSubmit={handleAddInstallment} className="space-y-3 mb-4">
+              <input
+                type="text"
+                value={instName}
+                onChange={(e) => setInstName(e.target.value)}
+                placeholder="Nama Cicilan (Misal: Cicilan Motor)"
+                required
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={instAmount}
+                  onChange={(e) => setInstAmount(e.target.value)}
+                  placeholder="Nominal / Bulan"
+                  required
+                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={instTenor}
+                  onChange={(e) => setInstTenor(e.target.value)}
+                  placeholder="Total Tenor (Bulan)"
+                  required
+                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition cursor-pointer"
+              >
+                Tambah Cicilan
+              </button>
+            </form>
+
+            <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+              {installments.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">Belum ada cicilan tenor.</p>
+              ) : (
+                installments.map((i) => {
+                  const progressPercent = Math.min(100, Math.round((i.paidCount / i.tenor) * 100));
+                  const isCompleted = i.paidCount >= i.tenor;
+
+                  return (
+                    <div key={i.id} className="p-3 bg-slate-50 rounded-xl space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold text-slate-800 truncate">{i.name}</span>
+                        <button
+                          onClick={() => handleDeleteInstallment(i.id)}
+                          className="text-slate-300 hover:text-rose-500 text-xs px-1 cursor-pointer"
+                          title="Hapus"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="flex justify-between text-xs text-slate-500">
+                        <span>Cicilan ke-<b>{i.paidCount}</b> dari {i.tenor}</span>
+                        <span className="font-semibold text-indigo-600">{formatRupiah(i.amount)}/bln</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-indigo-600 h-full transition-all duration-300"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center pt-1">
+                        <span className="text-[11px] text-slate-400">
+                          {isCompleted ? '🎉 Lunas' : `${progressPercent}% Selesai`}
+                        </span>
+                        {!isCompleted ? (
+                          <button
+                            onClick={() => handlePayInstallment(i.id)}
+                            className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg font-medium hover:bg-indigo-100 transition cursor-pointer"
+                          >
+                            Bayar Bulan Ini
+                          </button>
+                        ) : (
+                          <span className="text-xs text-emerald-600 font-bold">Lunas Sempurna</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
 
       </main>
 
-      {/* MODAL RESET SEMUA DATA */}
+      {/* Modal Reset All Data */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 text-center animate-in zoom-in-95 duration-150">
@@ -1728,7 +1153,7 @@ export default function App() {
             </div>
             <h3 className="text-lg font-bold text-slate-900">Reset Semua Data?</h3>
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-              Tindakan ini akan menghapus semua riwayat transaksi, tagihan rutin, dan data cicilan di browser ini.
+              Yakin ingin mereset seluruh data transaksi, tagihan rutin, dan cicilan tenor? Tindakan ini tidak dapat dibatalkan.
             </p>
             <div className="mt-6 flex items-center justify-center gap-2">
               <button
@@ -1750,7 +1175,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL KODE STANDALONE HTML SINGLE-FILE */}
+      {/* Modal Kode HTML Standalone */}
       {showCodeModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6">
           <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
@@ -1758,7 +1183,7 @@ export default function App() {
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Code2 className="w-5 h-5 text-indigo-600" />
-                  Satu File Kode HTML Lengkap (Buku Kas, Tagihan & Cicilan)
+                  Satu File Kode HTML Lengkap - Budgeting DYT
                 </h3>
                 <p className="text-xs text-slate-500">
                   File standalone mandiri dengan Tailwind CSS CDN & LocalStorage. Tinggal simpan sebagai <code className="text-indigo-600 font-mono">index.html</code>.
@@ -1775,7 +1200,7 @@ export default function App() {
 
             <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-slate-600">
-                Fitur lengkap: Dashboard 3 Kartu, Transaksi, Checklist Tagihan Rutin, Tracker Cicilan Tenor
+                Fitur lengkap: Dashboard 3 Kartu, Transaksi, Tagihan Rutin & Tracker Cicilan Tenor
               </span>
               <div className="flex items-center gap-2">
                 <button
