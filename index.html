@@ -1,423 +1,2332 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BudgetingKU</title>
-    <link rel="manifest" href="./manifest.json">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#4f46e5',
-                    }
-                }
-            }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BudgetingKU - Kelola Keuangan, Tagihan & Cicilan</title>
+  <meta name="description" content="Aplikasi manajemen keuangan pribadi, tagihan rutin bulanan, dan pelacak cicilan berjangka dengan penyimpanan data lokal privat." />
+  <meta property="og:title" content="BudgetingKU - Kelola Keuangan, Tagihan & Cicilan" />
+  <meta property="og:description" content="Aplikasi manajemen keuangan pribadi, tagihan rutin bulanan, dan pelacak cicilan berjangka." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4f46e5',
+          }
         }
-    </script>
+      }
+    };
+  </script>
+
+  <!-- React 18 & ReactDOM UMD CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel Standalone for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen pb-12 text-slate-800">
+<body class="bg-slate-100 min-h-screen text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- Header -->
-    <header class="bg-indigo-600 text-white p-4 text-center shadow-md font-bold text-xl">
-        BudgetingKU
-    </header>
+  <div id="root"></div>
 
-    <main class="max-w-md mx-auto p-4 space-y-4">
+  <!-- BUDGETINGKU REACT APP SCRIPT (STANDALONE) -->
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo } = React;
 
-        <!-- Pemilih Periode Bulan -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-            <label for="monthFilter" class="text-sm font-semibold text-slate-700">Periode Bulan:</label>
-            <input type="month" id="monthFilter" class="px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-medium text-slate-700">
-        </div>
+    // --- ICONS (SVG) ---
+    const IconBase = ({ d, children, className = "w-4 h-4", ...props }) => (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+        {...props}
+      >
+        {d && <path d={d} />}
+        {children}
+      </svg>
+    );
 
-        <!-- Dashboard Ringkasan Saldo -->
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Dana Masuk</p>
-                <p id="totalIncomeText" class="text-sm font-extrabold text-emerald-700 mt-0.5">Rp 0</p>
-            </div>
-            <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Total Pengeluaran</p>
-                <p id="totalExpenseText" class="text-sm font-extrabold text-rose-700 mt-0.5">Rp 0</p>
-            </div>
-            <div class="col-span-2 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center space-y-0.5">
-                <p class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Sisa Saldo Periode Ini</p>
-                <p id="remainingBudget" class="text-2xl font-black text-indigo-700">Rp 0</p>
-            </div>
-        </div>
+    const LockIcon = (p) => (
+      <IconBase {...p}>
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </IconBase>
+    );
+    const EyeIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </IconBase>
+    );
+    const EyeOffIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+        <line x1="2" x2="22" y1="2" y2="22" />
+      </IconBase>
+    );
+    const ShieldCheckIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+        <path d="m9 12 2 2 4-4" />
+      </IconBase>
+    );
+    const UserIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </IconBase>
+    );
+    const KeyRoundIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z" />
+        <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
+      </IconBase>
+    );
+    const SparklesIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4" />
+        <path d="M19 17v4" />
+        <path d="M3 5h4" />
+        <path d="M17 19h4" />
+      </IconBase>
+    );
+    const LogOutIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" x2="9" y1="12" y2="12" />
+      </IconBase>
+    );
+    const DownloadIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" x2="12" y1="15" y2="3" />
+      </IconBase>
+    );
+    const UploadIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" x2="12" y1="3" y2="15" />
+      </IconBase>
+    );
+    const CopyIcon = (p) => (
+      <IconBase {...p}>
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+      </IconBase>
+    );
+    const CheckIcon = (p) => (
+      <IconBase {...p}>
+        <polyline points="20 6 9 17 4 12" />
+      </IconBase>
+    );
+    const XIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </IconBase>
+    );
+    const ChevronLeftIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m15 18-6-6 6-6" />
+      </IconBase>
+    );
+    const ChevronRightIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m9 18 6-6-6-6" />
+      </IconBase>
+    );
+    const CalendarIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <rect width="18" height="18" x="3" y="4" rx="2" />
+        <path d="M3 10h18" />
+      </IconBase>
+    );
+    const RotateCcwIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </IconBase>
+    );
+    const ArrowDownRightIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m7 7 10 10" />
+        <path d="M17 7v10H7" />
+      </IconBase>
+    );
+    const ArrowUpRightIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M7 17 17 7" />
+        <path d="M7 7h10v10" />
+      </IconBase>
+    );
+    const WalletIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+        <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+      </IconBase>
+    );
+    const PieChartIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+        <path d="M22 12A10 10 0 0 0 12 2v10z" />
+      </IconBase>
+    );
+    const AlertTriangleIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+        <line x1="12" x2="12" y1="9" y2="13" />
+        <line x1="12" x2="12.01" y1="17" y2="17" />
+      </IconBase>
+    );
+    const AlertCircleIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" x2="12" y1="8" y2="12" />
+        <line x1="12" x2="12.01" y1="16" y2="16" />
+      </IconBase>
+    );
+    const CheckCircle2Icon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="m9 12 2 2 4-4" />
+      </IconBase>
+    );
+    const PlusCircleIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 12h8" />
+        <path d="M12 8v8" />
+      </IconBase>
+    );
+    const Trash2Icon = (p) => (
+      <IconBase {...p}>
+        <path d="M3 6h18" />
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+        <line x1="10" x2="10" y1="11" y2="17" />
+        <line x1="14" x2="14" y1="11" y2="17" />
+      </IconBase>
+    );
+    const ArrowUpCircleIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="16 12 12 8 8 12" />
+        <line x1="12" x2="12" y1="16" y2="8" />
+      </IconBase>
+    );
+    const ArrowDownCircleIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="8 12 12 16 16 12" />
+        <line x1="12" x2="12" y1="8" y2="16" />
+      </IconBase>
+    );
+    const SearchIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.3-4.3" />
+      </IconBase>
+    );
+    const ClockIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </IconBase>
+    );
+    const AwardIcon = (p) => (
+      <IconBase {...p}>
+        <circle cx="12" cy="8" r="6" />
+        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+      </IconBase>
+    );
+    const CheckSquareIcon = (p) => (
+      <IconBase {...p}>
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </IconBase>
+    );
+    const SquareIcon = (p) => (
+      <IconBase {...p}>
+        <rect width="18" height="18" x="3" y="3" rx="2" />
+      </IconBase>
+    );
 
-        <!-- Form Input Pemasukan -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2"><span>💰</span> Pemasukan Bulan Ini</h2>
-            <form id="incomeForm" class="space-y-3 mb-3">
-                <input type="text" id="incomeName" placeholder="Sumber (Gaji, Komisi, Bonus)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="incomeAmount" placeholder="Nominal (Rp)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-emerald-700 transition">Tambah Pemasukan</button>
-            </form>
-            <div id="incomeList" class="space-y-2 text-sm text-slate-500">
-                Belum ada pemasukan.
-            </div>
-        </div>
+    // --- UTILS & FORMATTERS ---
+    function formatRupiah(amount) {
+      if (isNaN(amount) || amount === null || amount === undefined) return 'Rp 0';
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+      }).format(amount);
+    }
 
-        <!-- Form Catat Pengeluaran Harian -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2"><span>💸</span> Catat Pengeluaran Harian</h2>
-            <form id="transForm" class="space-y-3 mb-3">
-                <input type="text" id="transName" placeholder="Nama Transaksi (Makan, Belanja)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="transAmount" placeholder="Nominal (Rp)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Simpan Transaksi</button>
-            </form>
-            <div id="transList" class="space-y-2 text-sm text-slate-500">
-                Belum ada pengeluaran harian.
-            </div>
-        </div>
+    function getCurrentMonthKey() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
 
-        <!-- Tambah Tagihan Rutin Bulanan -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2 text-indigo-600"><span>📄</span> Tambah Tagihan Rutin Bulanan</h2>
-            <form id="billForm" class="space-y-3">
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Tagihan</label>
-                    <input type="text" id="billName" placeholder="Misal: Listrik PLN, WiFi, Kost, Asuransi" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+    function getTodayDateString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatMonthLabel(monthKey) {
+      if (!monthKey || !monthKey.includes('-')) return monthKey;
+      const [yearStr, monthStr] = monthKey.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1;
+      const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+      ];
+      return month >= 0 && month < 12 ? `${monthNames[month]} ${year}` : monthKey;
+    }
+
+    function getAdjacentMonthKey(monthKey, offset) {
+      if (!monthKey || !monthKey.includes('-')) return getCurrentMonthKey();
+      const [yearStr, monthStr] = monthKey.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1;
+      const date = new Date(year, month + offset, 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatDateIndo(dateStr) {
+      if (!dateStr) return '';
+      try {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+          return `${parseInt(parts[2], 10)} ${shortMonths[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+        }
+        return dateStr;
+      } catch {
+        return dateStr;
+      }
+    }
+
+    // --- STORAGE HELPERS (BACKWARDS COMPATIBLE) ---
+    const STORAGE_USERS_KEY = 'budgeting_users';
+    const STORAGE_CURRENT_USER_KEY = 'budgeting_current_user';
+
+    function getStoredUsers() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_USERS_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveStoredUsers(users) {
+      try {
+        localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function getStoredCurrentUser() {
+      try {
+        return localStorage.getItem(STORAGE_CURRENT_USER_KEY);
+      } catch {
+        return null;
+      }
+    }
+
+    function setStoredCurrentUser(username) {
+      try {
+        if (username) localStorage.setItem(STORAGE_CURRENT_USER_KEY, username);
+        else localStorage.removeItem(STORAGE_CURRENT_USER_KEY);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function getUserMonthDataStore(username) {
+      try {
+        const raw = localStorage.getItem(`budgeting_data_${username.toLowerCase()}`);
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveUserMonthDataStore(username, data) {
+      try {
+        localStorage.setItem(`budgeting_data_${username.toLowerCase()}`, JSON.stringify(data));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function getUserInstallments(username) {
+      try {
+        const raw = localStorage.getItem(`budgeting_installments_${username.toLowerCase()}`);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveUserInstallments(username, installments) {
+      try {
+        localStorage.setItem(`budgeting_installments_${username.toLowerCase()}`, JSON.stringify(installments));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function getOrCreateMonthData(store, monthKey) {
+      if (store && store[monthKey]) {
+        const d = store[monthKey];
+        return {
+          incomes: Array.isArray(d.incomes) ? d.incomes : [],
+          transactions: Array.isArray(d.transactions) ? d.transactions : [],
+          bills: Array.isArray(d.bills) ? d.bills : [],
+          installmentPaidKeys: Array.isArray(d.installmentPaidKeys) ? d.installmentPaidKeys : [],
+        };
+      }
+      return { incomes: [], transactions: [], bills: [], installmentPaidKeys: [] };
+    }
+
+    function seedDemoData(username) {
+      const currentMonth = getCurrentMonthKey();
+      const demoStore = {
+        [currentMonth]: {
+          incomes: [
+            { id: 'inc-1', name: 'Gaji Pokok Bulanan', amount: 8500000, category: 'Gaji Pokok', date: `${currentMonth}-01` },
+            { id: 'inc-2', name: 'Project Freelance Desain', amount: 2000000, category: 'Freelance / Side Job', date: `${currentMonth}-08` },
+          ],
+          transactions: [
+            { id: 'tx-1', name: 'Belanja Mingguan Supermarket', amount: 450000, category: 'Belanja Kebutuhan', date: `${currentMonth}-03` },
+            { id: 'tx-2', name: 'Bensin Motor & Parkir', amount: 80000, category: 'Transportasi & Bensin', date: `${currentMonth}-05` },
+            { id: 'tx-3', name: 'Makan Siang Bareng Tim', amount: 65000, category: 'Makanan & Minuman', date: `${currentMonth}-07` },
+            { id: 'tx-4', name: 'Kopi & Snack Santai', amount: 45000, category: 'Makanan & Minuman', date: `${currentMonth}-10` },
+          ],
+          bills: [
+            { id: 'bill-1', name: 'Listrik Token PLN', amount: 350000, paid: true, dueDate: 'Tgl 5' },
+            { id: 'bill-2', name: 'Internet WiFi IndiHome', amount: 380000, paid: true, dueDate: 'Tgl 10' },
+            { id: 'bill-3', name: 'Sewa Kost Bulanan', amount: 1500000, paid: false, dueDate: 'Tgl 25' },
+            { id: 'bill-4', name: 'BPJS Kesehatan', amount: 150000, paid: false, dueDate: 'Tgl 15' },
+          ],
+          installmentPaidKeys: [0],
+        },
+      };
+
+      const demoInstallments = [
+        { id: 'inst-1', name: 'Smartphone Samsung Galaxy', amount: 650000, tenor: 12, paidMonths: 5 },
+        { id: 'inst-2', name: 'Laptop Kerja ASUS Zenbook', amount: 950000, tenor: 10, paidMonths: 7 },
+      ];
+
+      saveUserMonthDataStore(username, demoStore);
+      saveUserInstallments(username, demoInstallments);
+      return { store: demoStore, installments: demoInstallments };
+    }
+
+    // --- TOAST NOTIFICATIONS ---
+    function ToastContainer({ toasts, onDismiss }) {
+      if (toasts.length === 0) return null;
+      return (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4">
+          {toasts.map((toast) => {
+            const bgConfig = {
+              success: 'bg-emerald-900/90 border-emerald-500/40 text-emerald-100',
+              error: 'bg-rose-900/90 border-rose-500/40 text-rose-100',
+              warning: 'bg-amber-900/90 border-amber-500/40 text-amber-100',
+              info: 'bg-indigo-900/90 border-indigo-500/40 text-indigo-100',
+            }[toast.type];
+
+            return (
+              <div
+                key={toast.id}
+                className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl shadow-xl backdrop-blur-md border transition-all ${bgConfig}`}
+              >
+                <div className="shrink-0 mt-0.5">
+                  {toast.type === 'success' && <CheckCircle2Icon className="w-5 h-5 text-emerald-400" />}
+                  {toast.type === 'error' && <AlertCircleIcon className="w-5 h-5 text-rose-400" />}
+                  {toast.type === 'warning' && <AlertTriangleIcon className="w-5 h-5 text-amber-400" />}
+                  {toast.type === 'info' && <CheckCircle2Icon className="w-5 h-5 text-indigo-400" />}
                 </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nominal Tagihan (Rp)</label>
-                    <input type="number" id="billAmount" placeholder="350000" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <div className="flex-1 min-w-0">
+                  {toast.title && <p className="text-xs font-bold leading-tight mb-0.5">{toast.title}</p>}
+                  <p className="text-xs opacity-90 leading-relaxed break-words">{toast.message}</p>
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2">
-                    <span>⊕</span> Tambah ke Daftar
+                <button
+                  onClick={() => onDismiss(toast.id)}
+                  className="text-white/60 hover:text-white p-1 -mr-1 -mt-1 rounded-lg"
+                >
+                  <XIcon className="w-3.5 h-3.5" />
                 </button>
-            </form>
+              </div>
+            );
+          })}
         </div>
+      );
+    }
 
-        <!-- Checklist Tagihan Bulan Ini -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="font-bold text-slate-700 text-base">Checklist Tagihan Bulan Ini</h2>
-                    <p class="text-[11px] text-slate-400">Centang kotak untuk menandai Lunas</p>
+    // --- CONFIRM MODAL ---
+    function ConfirmModal({ isOpen, title, message, confirmLabel = 'Ya, Lanjutkan', cancelLabel = 'Batal', confirmVariant = 'danger', onConfirm, onCancel }) {
+      if (!isOpen) return null;
+      const btnVariant = {
+        danger: 'bg-rose-600 hover:bg-rose-700 text-white',
+        primary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+        success: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+      }[confirmVariant];
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${confirmVariant === 'danger' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                  <AlertCircleIcon className="w-5 h-5" />
                 </div>
-                <div class="flex gap-1.5">
-                    <button onclick="copyPreviousMonthBills()" title="Salin tagihan rutin dari bulan sebelumnya" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1">
-                        <span>📋</span> Salin Bulan Lalu
-                    </button>
-                    <button onclick="resetBills()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-xl font-medium transition">
-                        Reset
-                    </button>
-                </div>
+                <h3 className="font-bold text-base text-slate-900">{title}</h3>
+              </div>
+              <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <XIcon className="w-5 h-5" />
+              </button>
             </div>
-            <div id="billList" class="space-y-2.5 text-sm pt-2">
-                Belum ada tagihan rutin.
+            <p className="text-xs text-slate-600 leading-relaxed">{message}</p>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+              >
+                {cancelLabel}
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition shadow-sm ${btnVariant}`}
+              >
+                {confirmLabel}
+              </button>
             </div>
+          </div>
         </div>
+      );
+    }
 
-        <!-- Tambah Cicilan Berjangka (Tenor) -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2 text-indigo-600"><span>⏱️</span> Tambah Cicilan Berjangka (Tenor)</h2>
-            <form id="installmentForm" class="space-y-3">
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Barang / Tagihan</label>
-                    <input type="text" id="instName" placeholder="Contoh: Smartphone, Laptop, Kulkas" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+    // --- AUTH SCREEN ---
+    function AuthScreen({ onSuccess, showToast }) {
+      const [isLoginMode, setIsLoginMode] = useState(true);
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [showPassword, setShowPassword] = useState(false);
+      const [loading, setLoading] = useState(false);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const cleanUser = username.trim().toLowerCase();
+        if (!cleanUser || !password) {
+          showToast('warning', 'Harap isi nama pengguna dan kata sandi.');
+          return;
+        }
+
+        setLoading(true);
+        setTimeout(() => {
+          const users = getStoredUsers();
+          if (isLoginMode) {
+            if (!users[cleanUser] || users[cleanUser].password !== password) {
+              setLoading(false);
+              showToast('error', 'Nama pengguna atau kata sandi tidak cocok. Silakan periksa kembali.', 'Gagal Masuk');
+              return;
+            }
+            setLoading(false);
+            showToast('success', `Selamat datang kembali, ${cleanUser}!`, 'Berhasil Masuk');
+            onSuccess(cleanUser);
+          } else {
+            if (users[cleanUser]) {
+              setLoading(false);
+              showToast('warning', 'Nama pengguna sudah terdaftar. Silakan pilih nama lain atau masuk.', 'Sudah Ada');
+              return;
+            }
+            users[cleanUser] = { password, createdAt: new Date().toISOString() };
+            saveStoredUsers(users);
+            setLoading(false);
+            showToast('success', 'Akun berhasil didaftarkan! Silakan masuk.', 'Pendaftaran Sukses');
+            setIsLoginMode(true);
+          }
+        }, 200);
+      };
+
+      const handleDemo = () => {
+        const demoUser = 'nurhidayat';
+        const users = getStoredUsers();
+        if (!users[demoUser]) {
+          users[demoUser] = { password: 'password123', createdAt: new Date().toISOString() };
+          saveStoredUsers(users);
+        }
+        showToast('info', 'Masuk menggunakan profil contoh.');
+        onSuccess(demoUser);
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-100 flex flex-col justify-between p-4 sm:p-6">
+          <div className="w-full max-w-md mx-auto my-auto pt-6 pb-8">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-700 text-xs font-semibold mb-3">
+                <ShieldCheckIcon className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Penyimpanan Finansial Aman & Privat</span>
+              </div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-2">
+                <span>Budgeting<span className="text-indigo-600">KU</span></span>
+              </h1>
+              <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                Aplikasi pencatatan keuangan pribadi, tagihan rutin, dan pelacak cicilan berjangka.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200/80 space-y-6">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
+                  <LockIcon className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nominal / Bulan (Rp)</label>
-                        <input type="number" id="instAmount" placeholder="500000" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tenor (Bulan)</label>
-                        <input type="number" id="instTenor" placeholder="6" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2">
-                    <span>⊕</span> Simpan Tracker Cicilan
+                <h2 className="text-lg font-black text-slate-800">
+                  {isLoginMode ? 'Selamat Datang di BudgetingKU' : 'Daftar Akun BudgetingKU'}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {isLoginMode
+                    ? 'Silakan masuk untuk mengakses data keuangan dan tagihanmu.'
+                    : 'Daftar akun baru untuk mulai mencatat keuangan secara terstruktur.'}
+                </p>
+              </div>
+
+              {/* Tab Switcher */}
+              <div className="flex bg-slate-100 p-1 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setIsLoginMode(true)}
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all ${
+                    isLoginMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Masuk
                 </button>
-            </form>
-        </div>
+                <button
+                  type="button"
+                  onClick={() => setIsLoginMode(false)}
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all ${
+                    !isLoginMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Daftar Akun
+                </button>
+              </div>
 
-        <!-- Daftar Tracker Cicilan -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Nama Pengguna / Username</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Contoh: nurhidayat"
+                    required
+                    className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <KeyRoundIcon className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Kata Sandi / Password</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    >
+                      {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {isLoginMode ? 'Masuk ke Aplikasi' : 'Daftar Akun Baru'}
+                </button>
+              </form>
+
+              <div className="pt-2 border-t border-slate-100 text-center">
+                <button
+                  type="button"
+                  onClick={handleDemo}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 py-1 px-3 rounded-lg hover:bg-slate-50 transition"
+                >
+                  <SparklesIcon className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Gunakan Akun Contoh (Demo Pengguna)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <footer className="text-center text-xs text-slate-400 py-4">
+            BudgetingKU &copy; {new Date().getFullYear()} • Data tersimpan di peramban Anda
+          </footer>
+        </div>
+      );
+    }
+
+    // --- HEADER ---
+    function Header({ username, onLogout, onOpenExport, onLoadDemo }) {
+      return (
+        <header className="bg-indigo-600 text-white shadow-md rounded-b-3xl sticky top-0 z-40">
+          <div className="max-w-xl mx-auto px-4 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center font-black text-sm text-white">
+                BK
+              </div>
+              <div>
+                <h1 className="font-extrabold text-base leading-none tracking-tight">BudgetingKU</h1>
+                <p className="text-[10px] text-indigo-200 font-medium">Kelola Keuangan Cerdas</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onLoadDemo}
+                title="Muat Contoh Data"
+                className="text-xs bg-indigo-700/80 hover:bg-indigo-700 text-indigo-100 p-2 rounded-xl transition flex items-center gap-1.5"
+              >
+                <SparklesIcon className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline text-[11px] font-medium">Contoh Data</span>
+              </button>
+
+              <button
+                onClick={onOpenExport}
+                title="Cadangkan / Ekspor Data"
+                className="text-xs bg-indigo-700/80 hover:bg-indigo-700 text-indigo-100 p-2 rounded-xl transition flex items-center gap-1.5"
+              >
+                <DownloadIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-[11px] font-medium">Cadangkan</span>
+              </button>
+
+              <div className="flex items-center gap-1.5 bg-indigo-500/70 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium">
+                <UserIcon className="w-3.5 h-3.5" />
+                <span className="max-w-[90px] truncate">{username}</span>
+              </div>
+
+              <button
+                onClick={onLogout}
+                className="text-xs bg-rose-500 hover:bg-rose-600 active:scale-95 text-white px-2.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1 shadow-sm"
+              >
+                <LogOutIcon className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Keluar</span>
+              </button>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    // --- PERIOD SELECTOR ---
+    function PeriodSelector({ currentMonthKey, onChangeMonth }) {
+      const isCurrentMonth = currentMonthKey === getCurrentMonthKey();
+      return (
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
             <div>
-                <h2 class="font-bold text-slate-700 text-base">Daftar Tracker Cicilan</h2>
-                <p class="text-[11px] text-slate-400">Pantau progres tenor dan klik tombol bayar bulanan</p>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block leading-none">
+                Periode Anggaran
+              </span>
+              <span className="text-sm font-bold text-slate-800 leading-tight">
+                {formatMonthLabel(currentMonthKey)}
+              </span>
             </div>
-            <div id="installmentList" class="space-y-3 pt-2">
-                Belum ada cicilan berjangka.
-            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            {!isCurrentMonth && (
+              <button
+                onClick={() => onChangeMonth(getCurrentMonthKey())}
+                className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-1.5 rounded-xl transition flex items-center gap-1"
+              >
+                <RotateCcwIcon className="w-3 h-3" />
+                <span>Bulan Ini</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onChangeMonth(getAdjacentMonthKey(currentMonthKey, -1))}
+              className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition"
+              title="Bulan Sebelumnya"
+            >
+              <ChevronLeftIcon className="w-4 h-4" />
+            </button>
+
+            <input
+              type="month"
+              value={currentMonthKey}
+              onChange={(e) => e.target.value && onChangeMonth(e.target.value)}
+              className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700 cursor-pointer"
+            />
+
+            <button
+              onClick={() => onChangeMonth(getAdjacentMonthKey(currentMonthKey, 1))}
+              className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition"
+              title="Bulan Berikutnya"
+            >
+              <ChevronRightIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+      );
+    }
 
-    </main>
+    // --- SUMMARY CARDS ---
+    function SummaryCards({ totalIncomes, totalTrans, totalBills, totalInstallments, paidBillsTotal, paidInstallmentsTotal }) {
+      const totalExpenses = totalTrans + totalBills + totalInstallments;
+      const remainingBudget = totalIncomes - totalExpenses;
+      const isDeficit = remainingBudget < 0;
+      const actualPaidOutflow = totalTrans + paidBillsTotal + paidInstallmentsTotal;
+      const committedRatio = totalIncomes > 0 ? Math.min(Math.round((totalExpenses / totalIncomes) * 100), 100) : 0;
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
-        }
+      return (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            {/* Dana Masuk */}
+            <div className="bg-emerald-50/80 border border-emerald-100 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Dana Masuk</span>
+                <span className="p-1 rounded-lg bg-emerald-100 text-emerald-700">
+                  <ArrowUpRightIcon className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="mt-2">
+                <p className="text-base sm:text-lg font-black text-emerald-800 tracking-tight">{formatRupiah(totalIncomes)}</p>
+                <p className="text-[10px] text-emerald-600/90 font-medium mt-0.5">Total pemasukan bulan ini</p>
+              </div>
+            </div>
 
-        const monthFilter = document.getElementById('monthFilter');
-        const now = new Date();
-        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        monthFilter.value = currentMonthStr;
+            {/* Total Komitmen Pengeluaran */}
+            <div className="bg-rose-50/80 border border-rose-100 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Total Komitmen</span>
+                <span className="p-1 rounded-lg bg-rose-100 text-rose-700">
+                  <ArrowDownRightIcon className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="mt-2">
+                <p className="text-base sm:text-lg font-black text-rose-800 tracking-tight">{formatRupiah(totalExpenses)}</p>
+                <p className="text-[10px] text-rose-600/90 font-medium mt-0.5">Harian + Tagihan + Cicilan</p>
+              </div>
+            </div>
 
-        let dataStore = JSON.parse(localStorage.getItem('budgeting_data')) || {};
-        let installmentsStore = JSON.parse(localStorage.getItem('budgeting_installments')) || [];
+            {/* Sisa Saldo Periode Ini */}
+            <div className={`col-span-2 p-4 rounded-2xl border text-center transition-all shadow-xs ${isDeficit ? 'bg-rose-100/70 border-rose-200' : 'bg-indigo-50/80 border-indigo-100'}`}>
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+                {isDeficit ? (
+                  <span className="text-rose-600 flex items-center gap-1">
+                    <AlertTriangleIcon className="w-4 h-4" />
+                    Defisit Anggaran Periode Ini
+                  </span>
+                ) : (
+                  <span className="text-indigo-600 flex items-center gap-1">
+                    <WalletIcon className="w-4 h-4" />
+                    Sisa Saldo Periode Ini
+                  </span>
+                )}
+              </div>
 
-        function getMonthData(monthKey) {
-            if (!dataStore[monthKey]) {
-                dataStore[monthKey] = { incomes: [], transactions: [], bills: [], installmentPaidKeys: [] };
-            }
-            if (!dataStore[monthKey].installmentPaidKeys) {
-                dataStore[monthKey].installmentPaidKeys = [];
-            }
-            return dataStore[monthKey];
-        }
+              <p className={`text-2xl sm:text-3xl font-black mt-1 tracking-tight ${isDeficit ? 'text-rose-700' : 'text-indigo-700'}`}>
+                {formatRupiah(remainingBudget)}
+              </p>
 
-        function saveData() {
-            localStorage.setItem('budgeting_data', JSON.stringify(dataStore));
-            localStorage.setItem('budgeting_installments', JSON.stringify(installmentsStore));
-            render();
-        }
+              {/* Progress bar */}
+              <div className="mt-3 pt-2.5 border-t border-slate-200/50 space-y-1.5">
+                <div className="flex justify-between items-center text-[11px] font-medium text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <PieChartIcon className="w-3.5 h-3.5 text-slate-400" />
+                    Alokasi Pemasukan: <strong className="text-slate-700">{committedRatio}%</strong>
+                  </span>
+                  <span>
+                    Realisasi terbayar: <strong className="text-slate-700">{formatRupiah(actualPaidOutflow)}</strong>
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 rounded-full ${
+                      isDeficit ? 'bg-rose-600' : committedRatio > 85 ? 'bg-amber-500' : 'bg-indigo-600'
+                    }`}
+                    style={{ width: `${Math.min(committedRatio, 100)}%` }}
+                  />
+                </div>
+              </div>
 
-        // Fungsi Khusus Menyalin Tagihan Rutin dari Bulan Sebelumnya
-        function copyPreviousMonthBills() {
-            const currentMonthKey = monthFilter.value;
-            const [year, month] = currentMonthKey.split('-').map(Number);
-            
-            const prevDate = new Date(year, month - 2, 1);
-            const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+              {/* Breakdown pills */}
+              <div className="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-slate-200/40 text-left">
+                <div className="bg-white/80 p-1.5 rounded-xl border border-slate-200/60">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate">💸 Harian</p>
+                  <p className="text-[11px] font-extrabold text-slate-700 mt-0.5 truncate">{formatRupiah(totalTrans)}</p>
+                </div>
+                <div className="bg-white/80 p-1.5 rounded-xl border border-slate-200/60">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate">📄 Tagihan</p>
+                  <p className="text-[11px] font-extrabold text-slate-700 mt-0.5 truncate">{formatRupiah(totalBills)}</p>
+                </div>
+                <div className="bg-white/80 p-1.5 rounded-xl border border-slate-200/60">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate">⏱️ Cicilan</p>
+                  <p className="text-[11px] font-extrabold text-slate-700 mt-0.5 truncate">{formatRupiah(totalInstallments)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-            if (!dataStore[prevMonthKey] || !dataStore[prevMonthKey].bills || dataStore[prevMonthKey].bills.length === 0) {
-                alert('Tidak ada data tagihan rutin di bulan sebelumnya untuk disalin.');
-                return;
-            }
+    // --- INCOME SECTION ---
+    const INCOME_CATEGORIES = ['Gaji Pokok', 'Bonus / THR', 'Freelance / Side Job', 'Investasi', 'Bisnis / Jualan', 'Lainnya'];
 
-            const currentData = getMonthData(currentMonthKey);
-            
-            // Salin hanya tagihan rutin dengan status belum lunas (paid: false)
-            const clonedBills = dataStore[prevMonthKey].bills.map(b => ({
-                name: b.name,
-                amount: b.amount,
-                paid: false
-            }));
+    function IncomeSection({ incomes, onAddIncome, onDeleteIncome }) {
+      const [name, setName] = useState('');
+      const [amount, setAmount] = useState('');
+      const [category, setCategory] = useState(INCOME_CATEGORIES[0]);
+      const [isExpanded, setIsExpanded] = useState(false);
 
-            currentData.bills = clonedBills;
-            saveData();
-            alert(`Berhasil menyalin ${clonedBills.length} tagihan rutin dari bulan ${prevMonthKey}!`);
-        }
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const num = parseFloat(amount.replace(/[^0-9]/g, ''));
+        if (!name.trim() || isNaN(num) || num <= 0) return;
+        onAddIncome({ name: name.trim(), amount: num, category, date: getTodayDateString() });
+        setName('');
+        setAmount('');
+        setIsExpanded(false);
+      };
 
-        function render() {
-            const monthKey = monthFilter.value;
-            const currentData = getMonthData(monthKey);
+      const total = incomes.reduce((s, i) => s + i.amount, 0);
 
-            const totalIncomes = currentData.incomes.reduce((acc, curr) => acc + curr.amount, 0);
-            const totalTrans = currentData.transactions.reduce((acc, curr) => acc + curr.amount, 0);
-            const totalAllBills = currentData.bills.reduce((acc, curr) => acc + curr.amount, 0);
-            const totalAllInstallments = installmentsStore.reduce((acc, curr) => acc + curr.amount, 0);
+      return (
+        <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💰</span>
+              <div>
+                <h2 className="font-bold text-slate-800 text-base leading-tight">Pemasukan Bulan Ini</h2>
+                <p className="text-[11px] text-slate-400">Total: {formatRupiah(total)} ({incomes.length} item)</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition flex items-center gap-1"
+            >
+              <PlusCircleIcon className="w-3.5 h-3.5" />
+              <span>{isExpanded ? 'Tutup' : 'Tambah'}</span>
+            </button>
+          </div>
 
-            const totalExpenses = totalTrans + totalAllBills + totalAllInstallments;
-            const remaining = totalIncomes - totalExpenses;
+          {isExpanded && (
+            <form onSubmit={handleSubmit} className="p-3.5 bg-emerald-50/50 rounded-2xl border border-emerald-100 space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sumber Pemasukan</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Contoh: Gaji Pokok, Bonus Project, Penjualan"
+                  required
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nominal (Rp)</label>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Misal: 7500000"
+                    required
+                    min="1"
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kategori</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium text-slate-700"
+                  >
+                    {INCOME_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <ArrowUpCircleIcon className="w-4 h-4" />
+                  <span>Simpan Pemasukan</span>
+                </button>
+              </div>
+            </form>
+          )}
 
-            document.getElementById('totalIncomeText').innerText = `Rp ${totalIncomes.toLocaleString('id-ID')}`;
-            document.getElementById('totalExpenseText').innerText = `Rp ${totalExpenses.toLocaleString('id-ID')}`;
-            document.getElementById('remainingBudget').innerText = `Rp ${remaining.toLocaleString('id-ID')}`;
-
-            // Render Incomes
-            const incomeList = document.getElementById('incomeList');
-            if (currentData.incomes.length === 0) {
-                incomeList.innerHTML = '<p class="text-xs text-slate-400">Belum ada pemasukan.</p>';
-            } else {
-                incomeList.innerHTML = currentData.incomes.map((item, index) => `
-                    <div class="flex justify-between items-center p-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
-                        <span class="font-medium text-slate-700">${item.name}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-emerald-600">+ Rp ${item.amount.toLocaleString('id-ID')}</span>
-                            <button onclick="deleteItem('incomes', ${index})" class="text-xs text-rose-500 font-bold px-2 py-1 bg-white rounded-lg border border-rose-200">🗑️</button>
-                        </div>
+          <div className="space-y-2">
+            {incomes.length === 0 ? (
+              <div className="p-4 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200">
+                <p className="text-xs text-slate-400 font-medium">Belum ada pemasukan di periode bulan ini.</p>
+              </div>
+            ) : (
+              incomes.map((item, index) => (
+                <div key={item.id || index} className="flex justify-between items-center p-3 bg-emerald-50/70 rounded-2xl border border-emerald-100/90 hover:border-emerald-200 transition">
+                  <div className="min-w-0 pr-2">
+                    <p className="font-bold text-slate-800 text-sm truncate">{item.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-emerald-700">
+                      {item.category && <span className="bg-emerald-100/80 px-2 py-0.5 rounded-md font-semibold">{item.category}</span>}
+                      {item.date && <span className="text-slate-400">{item.date}</span>}
                     </div>
-                `).join('');
-            }
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-extrabold text-sm text-emerald-700">+ {formatRupiah(item.amount)}</span>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteIncome(index)}
+                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition"
+                      title="Hapus"
+                    >
+                      <Trash2Icon className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      );
+    }
 
-            // Render Transaksi
-            const transList = document.getElementById('transList');
-            if (currentData.transactions.length === 0) {
-                transList.innerHTML = '<p class="text-xs text-slate-400">Belum ada pengeluaran harian.</p>';
-            } else {
-                transList.innerHTML = currentData.transactions.map((item, index) => `
-                    <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                        <span class="font-medium text-slate-700">${item.name}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-rose-600">- Rp ${item.amount.toLocaleString('id-ID')}</span>
-                            <button onclick="deleteItem('transactions', ${index})" class="text-xs text-rose-500 font-bold px-2 py-1 bg-white rounded-lg border border-rose-200">🗑️</button>
-                        </div>
+    // --- DAILY EXPENSE SECTION ---
+    const EXPENSE_CATEGORIES = ['Makanan & Minuman', 'Transportasi & Bensin', 'Belanja Kebutuhan', 'Hiburan & Hobi', 'Kesehatan & Obat', 'Pendidikan', 'Lain-lain'];
+
+    function DailyExpenseSection({ transactions, onAddTransaction, onDeleteTransaction }) {
+      const [name, setName] = useState('');
+      const [amount, setAmount] = useState('');
+      const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
+      const [date, setDate] = useState(getTodayDateString());
+      const [isExpanded, setIsExpanded] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const num = parseFloat(amount.replace(/[^0-9]/g, ''));
+        if (!name.trim() || isNaN(num) || num <= 0) return;
+        onAddTransaction({ name: name.trim(), amount: num, category, date: date || getTodayDateString() });
+        setName('');
+        setAmount('');
+        setIsExpanded(false);
+      };
+
+      const total = transactions.reduce((s, i) => s + i.amount, 0);
+      const filtered = transactions.filter((item) => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return item.name.toLowerCase().includes(q) || (item.category && item.category.toLowerCase().includes(q));
+      });
+
+      return (
+        <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💸</span>
+              <div>
+                <h2 className="font-bold text-slate-800 text-base leading-tight">Catat Pengeluaran Harian</h2>
+                <p className="text-[11px] text-slate-400">Total: {formatRupiah(total)} ({transactions.length} transaksi)</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center gap-1"
+            >
+              <PlusCircleIcon className="w-3.5 h-3.5" />
+              <span>{isExpanded ? 'Tutup' : 'Catat'}</span>
+            </button>
+          </div>
+
+          {isExpanded && (
+            <form onSubmit={handleSubmit} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Transaksi</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Contoh: Makan Siang Nasi Padang, Belanja Sayur"
+                  required
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nominal (Rp)</label>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Misal: 35000"
+                    required
+                    min="1"
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kategori</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                  >
+                    {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Transaksi</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <ArrowDownCircleIcon className="w-4 h-4" />
+                  <span>Simpan Transaksi</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {transactions.length > 4 && (
+            <div className="relative">
+              <SearchIcon className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari transaksi pengeluaran..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 placeholder-slate-400"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {transactions.length === 0 ? (
+              <div className="p-4 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200">
+                <p className="text-xs text-slate-400 font-medium">Belum ada pengeluaran harian tercatat di periode ini.</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-3">Tidak ditemukan transaksi.</p>
+            ) : (
+              filtered.map((item, index) => {
+                const origIdx = transactions.indexOf(item);
+                return (
+                  <div key={item.id || index} className="flex justify-between items-center p-3 bg-slate-50/80 rounded-2xl border border-slate-100 hover:border-slate-200 transition">
+                    <div className="min-w-0 pr-2">
+                      <p className="font-bold text-slate-800 text-sm truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
+                        {item.category && <span className="bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded-md font-semibold">{item.category}</span>}
+                        {item.date && <span className="text-slate-400">{formatDateIndo(item.date)}</span>}
+                      </div>
                     </div>
-                `).join('');
-            }
-
-            // Render Tagihan dengan Checklist
-            const billList = document.getElementById('billList');
-            if (currentData.bills.length === 0) {
-                billList.innerHTML = '<p class="text-xs text-slate-400">Belum ada tagihan rutin.</p>';
-            } else {
-                billList.innerHTML = currentData.bills.map((item, index) => `
-                    <div class="flex items-center justify-between p-3 rounded-2xl border transition ${item.paid ? 'bg-emerald-50/60 border-emerald-200' : 'bg-white border-slate-200'}">
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" ${item.paid ? 'checked' : ''} onchange="toggleBillPaid(${index})" class="w-5 h-5 accent-indigo-600 rounded cursor-pointer">
-                            <div>
-                                <p class="font-bold text-slate-800 ${item.paid ? 'line-through text-slate-400' : ''}">${item.name}</p>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-                                        ${item.paid ? '✓ Sudah Lunas' : 'Belum Dibayar'}
-                                    </span>
-                                    <span class="text-[11px] text-slate-400">Tiap akhir bulan</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-extrabold ${item.paid ? 'text-slate-400' : 'text-slate-700'}">Rp ${item.amount.toLocaleString('id-ID')}</span>
-                            <button onclick="deleteItem('bills', ${index})" class="text-xs text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition">🗑️</button>
-                        </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-extrabold text-sm text-rose-600">- {formatRupiah(item.amount)}</span>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTransaction(origIdx >= 0 ? origIdx : index)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                        title="Hapus"
+                      >
+                        <Trash2Icon className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                `).join('');
-            }
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      );
+    }
 
-            // Render Tracker Cicilan
-            const installmentList = document.getElementById('installmentList');
-            if (installmentsStore.length === 0) {
-                installmentList.innerHTML = '<p class="text-xs text-slate-400">Belum ada cicilan berjangka.</p>';
-            } else {
-                installmentList.innerHTML = installmentsStore.map((inst, index) => {
-                    const isPaidThisMonth = currentData.installmentPaidKeys.includes(index);
-                    const paidMonths = inst.paidMonths || 0;
-                    const remainingMonths = inst.tenor - paidMonths;
-                    const remainingAmount = remainingMonths * inst.amount;
-                    const progressPercent = Math.round((paidMonths / inst.tenor) * 100);
+    // --- MONTHLY BILLS SECTION ---
+    function MonthlyBillsSection({ bills, onAddBill, onToggleBillPaid, onDeleteBill, onCopyPreviousMonthBills, onResetBills }) {
+      const [name, setName] = useState('');
+      const [amount, setAmount] = useState('');
+      const [dueDate, setDueDate] = useState('');
+      const [isFormOpen, setIsFormOpen] = useState(false);
 
-                    return `
-                        <div class="p-3.5 bg-white rounded-2xl border border-slate-200 space-y-2.5 shadow-sm">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <p class="font-bold text-slate-900">${inst.name}</p>
-                                        <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">Cicilan ke-${paidMonths + 1 > inst.tenor ? inst.tenor : paidMonths + 1} dari ${inst.tenor}</span>
-                                    </div>
-                                    <p class="text-xs text-slate-500 mt-1">Nominal: <b class="text-slate-700">Rp ${inst.amount.toLocaleString('id-ID')}</b> / bulan • Sisa tagihan: <b class="text-rose-600">Rp ${remainingAmount.toLocaleString('id-ID')}</b></p>
-                                </div>
-                                <button onclick="deleteInstallment(${index})" class="text-xs text-slate-400 hover:text-rose-500 p-1">🗑️</button>
-                            </div>
-                            
-                            <!-- Progress Bar -->
-                            <div class="space-y-1">
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
-                                </div>
-                                <div class="flex justify-between text-[11px] text-slate-400 font-medium">
-                                    <span>Progres Terbayar: ${progressPercent}%</span>
-                                    <span>Sisa: ${remainingMonths} bulan lagi</span>
-                                </div>
-                            </div>
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const num = parseFloat(amount.replace(/[^0-9]/g, ''));
+        if (!name.trim() || isNaN(num) || num <= 0) return;
+        onAddBill({ name: name.trim(), amount: num, dueDate: dueDate.trim() || undefined });
+        setName('');
+        setAmount('');
+        setDueDate('');
+        setIsFormOpen(false);
+      };
 
-                            <button onclick="toggleInstallmentPaid(${index})" class="w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${isPaidThisMonth ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
-                                ${isPaidThisMonth ? '✓ Sudah Dibayar Bulan Ini' : '🟢 Bayar Cicilan Bulan Ini'}
-                            </button>
+      const totalBills = bills.reduce((sum, b) => sum + b.amount, 0);
+      const paidBillsCount = bills.filter((b) => b.paid).length;
+      const paidBillsAmount = bills.filter((b) => b.paid).reduce((sum, b) => sum + b.amount, 0);
+      const progressPercent = bills.length > 0 ? Math.round((paidBillsCount / bills.length) * 100) : 0;
+
+      return (
+        <div className="space-y-4">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                <span>📄</span>
+                <span>Tambah Tagihan Rutin Bulanan</span>
+              </h2>
+              <button
+                onClick={() => setIsFormOpen(!isFormOpen)}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center gap-1"
+              >
+                <PlusCircleIcon className="w-3.5 h-3.5" />
+                <span>{isFormOpen ? 'Tutup' : 'Tambah'}</span>
+              </button>
+            </div>
+
+            {isFormOpen && (
+              <form onSubmit={handleSubmit} className="p-3.5 bg-indigo-50/40 rounded-2xl border border-indigo-100 space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Tagihan</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Misal: Listrik PLN, WiFi IndiHome, Kost, BPJS"
+                    required
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nominal Tagihan (Rp)</label>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="Contoh: 350000"
+                      required
+                      min="1"
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jatuh Tempo (Opsional)</label>
+                    <input
+                      type="text"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      placeholder="Misal: Tgl 10 tiap bulan"
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsFormOpen(false)}
+                    className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+                  >
+                    <PlusCircleIcon className="w-4 h-4" />
+                    <span>Tambah ke Daftar Tagihan</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="font-bold text-slate-800 text-base leading-tight">Checklist Tagihan Bulan Ini</h2>
+                <p className="text-[11px] text-slate-400">Centang kotak untuk menandai Lunas</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={onCopyPreviousMonthBills}
+                  className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1 shadow-2xs"
+                  title="Salin tagihan rutin dari bulan sebelumnya"
+                >
+                  <CopyIcon className="w-3.5 h-3.5" />
+                  <span>Salin Bulan Lalu</span>
+                </button>
+                {bills.length > 0 && (
+                  <button
+                    onClick={onResetBills}
+                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-xl font-medium transition flex items-center gap-1"
+                    title="Reset status lunas semua tagihan bulan ini"
+                  >
+                    <RotateCcwIcon className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {bills.length > 0 && (
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
+                <div className="flex justify-between items-center text-[11px] font-medium text-slate-600">
+                  <span>Status Lunas: <strong>{paidBillsCount}</strong> dari {bills.length} tagihan ({progressPercent}%)</span>
+                  <span>Terbayar: <strong className="text-emerald-600">{formatRupiah(paidBillsAmount)}</strong> / {formatRupiah(totalBills)}</span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2.5 pt-1">
+              {bills.length === 0 ? (
+                <div className="p-4 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Belum ada tagihan rutin di bulan ini.</p>
+                  <p className="text-[10px] text-slate-400">Gunakan "Salin Bulan Lalu" atau tambahkan melalui formulir di atas.</p>
+                </div>
+              ) : (
+                bills.map((item, index) => (
+                  <div
+                    key={item.id || index}
+                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                      item.paid ? 'bg-emerald-50/70 border-emerald-200 shadow-2xs' : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <button
+                        type="button"
+                        onClick={() => onToggleBillPaid(index)}
+                        className="focus:outline-none transition active:scale-95"
+                      >
+                        {item.paid ? (
+                          <CheckSquareIcon className="w-5 h-5 text-indigo-600" />
+                        ) : (
+                          <SquareIcon className="w-5 h-5 text-slate-300 hover:text-indigo-500" />
+                        )}
+                      </button>
+
+                      <div className="min-w-0">
+                        <p className={`font-bold text-sm truncate transition ${item.paid ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                          {item.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                            item.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {item.paid ? '✓ Sudah Lunas' : 'Belum Dibayar'}
+                          </span>
+                          {item.dueDate && <span className="text-[10px] text-slate-400">{item.dueDate}</span>}
                         </div>
-                    `;
-                }).join('');
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`font-extrabold text-sm ${item.paid ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                        {formatRupiah(item.amount)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteBill(index)}
+                        className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition"
+                        title="Hapus tagihan"
+                      >
+                        <Trash2Icon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- INSTALLMENTS SECTION ---
+    function InstallmentsSection({ installments, installmentPaidKeys, onAddInstallment, onToggleInstallmentPaid, onDeleteInstallment }) {
+      const [name, setName] = useState('');
+      const [amount, setAmount] = useState('');
+      const [tenor, setTenor] = useState('');
+      const [isFormOpen, setIsFormOpen] = useState(false);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const num = parseFloat(amount.replace(/[^0-9]/g, ''));
+        const ten = parseInt(tenor, 10);
+        if (!name.trim() || isNaN(num) || num <= 0 || isNaN(ten) || ten <= 0) return;
+        onAddInstallment({ name: name.trim(), amount: num, tenor: ten });
+        setName('');
+        setAmount('');
+        setTenor('');
+        setIsFormOpen(false);
+      };
+
+      const handlePay = (index, inst, isPaidThisMonth) => {
+        if (!isPaidThisMonth && (inst.paidMonths + 1) >= inst.tenor) {
+          try {
+            if (window.confetti) {
+              window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
             }
+          } catch {}
         }
+        onToggleInstallmentPaid(index);
+      };
 
-        function toggleBillPaid(index) {
-            const monthKey = monthFilter.value;
-            dataStore[monthKey].bills[index].paid = !dataStore[monthKey].bills[index].paid;
-            saveData();
+      const totalMonthly = installments.reduce((s, i) => s + i.amount, 0);
+
+      return (
+        <div className="space-y-4">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                <span>⏱️</span>
+                <span>Tambah Cicilan Berjangka (Tenor)</span>
+              </h2>
+              <button
+                onClick={() => setIsFormOpen(!isFormOpen)}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition flex items-center gap-1"
+              >
+                <PlusCircleIcon className="w-3.5 h-3.5" />
+                <span>{isFormOpen ? 'Tutup' : 'Tambah'}</span>
+              </button>
+            </div>
+
+            {isFormOpen && (
+              <form onSubmit={handleSubmit} className="p-3.5 bg-indigo-50/40 rounded-2xl border border-indigo-100 space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Barang / Tagihan</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Contoh: Smartphone, Laptop, Motor, Kulkas"
+                    required
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nominal / Bulan (Rp)</label>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="500000"
+                      required
+                      min="1"
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Tenor (Bulan)</label>
+                    <input
+                      type="number"
+                      value={tenor}
+                      onChange={(e) => setTenor(e.target.value)}
+                      placeholder="6"
+                      required
+                      min="1"
+                      max="120"
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsFormOpen(false)}
+                    className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5"
+                  >
+                    <PlusCircleIcon className="w-4 h-4" />
+                    <span>Simpan Tracker Cicilan</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-bold text-slate-800 text-base leading-tight">Daftar Tracker Cicilan</h2>
+                <p className="text-[11px] text-slate-400">Pantau progres tenor dan klik tombol bayar bulanan</p>
+              </div>
+              {installments.length > 0 && (
+                <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-xl font-bold">
+                  {formatRupiah(totalMonthly)} /bln
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-3 pt-1">
+              {installments.length === 0 ? (
+                <div className="p-4 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Belum ada cicilan berjangka yang dicatat.</p>
+                </div>
+              ) : (
+                installments.map((inst, index) => {
+                  const isPaidThisMonth = installmentPaidKeys.includes(index);
+                  const paidMonths = inst.paidMonths || 0;
+                  const remainingMonths = Math.max(0, inst.tenor - paidMonths);
+                  const remainingAmount = remainingMonths * inst.amount;
+                  const progressPercent = Math.min(100, Math.round((paidMonths / inst.tenor) * 100));
+                  const isFullyPaid = paidMonths >= inst.tenor;
+                  const currentStep = Math.min(inst.tenor, paidMonths + (isPaidThisMonth ? 0 : 1));
+
+                  return (
+                    <div
+                      key={inst.id || index}
+                      className={`p-4 rounded-2xl border space-y-3 transition-all shadow-xs ${
+                        isFullyPaid
+                          ? 'bg-emerald-50/50 border-emerald-200'
+                          : isPaidThisMonth
+                          ? 'bg-indigo-50/30 border-indigo-200'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-slate-900 text-sm truncate">{inst.name}</p>
+                            {isFullyPaid ? (
+                              <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <AwardIcon className="w-3 h-3 text-emerald-600" />
+                                Lunas Sepenuhnya
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                                Cicilan ke-{currentStep} dari {inst.tenor}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {formatRupiah(inst.amount)} /bln • Sisa:{' '}
+                            <b className={isFullyPaid ? 'text-emerald-700' : 'text-rose-600'}>
+                              {isFullyPaid ? 'Rp 0 (Selesai)' : formatRupiah(remainingAmount)}
+                            </b>
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteInstallment(index)}
+                          className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition shrink-0"
+                          title="Hapus"
+                        >
+                          <Trash2Icon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${isFullyPaid ? 'bg-emerald-500' : 'bg-indigo-600'}`}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[11px] text-slate-400 font-medium">
+                          <span>Progres: <strong className="text-slate-700">{progressPercent}%</strong></span>
+                          <span>
+                            {isFullyPaid ? (
+                              <span className="text-emerald-600 font-bold">Semua {inst.tenor} bulan telah lunas</span>
+                            ) : (
+                              <>Sisa: <strong className="text-slate-700">{remainingMonths} bulan</strong></>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      {!isFullyPaid ? (
+                        <button
+                          type="button"
+                          onClick={() => handlePay(index, inst, isPaidThisMonth)}
+                          className={`w-full py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
+                            isPaidThisMonth
+                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
+                        >
+                          {isPaidThisMonth ? (
+                            <>
+                              <CheckCircle2Icon className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>✓ Sudah Dibayar Bulan Ini (Klik untuk Batal)</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                              <span>🟢 Bayar Cicilan Bulan Ini</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div className="p-2 bg-emerald-50 rounded-xl text-center text-xs font-semibold text-emerald-700 border border-emerald-100 flex items-center justify-center gap-1.5">
+                          <AwardIcon className="w-4 h-4 text-emerald-600" />
+                          <span>Selamat! Cicilan barang ini sudah selesai lunas.</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- EXPORT / BACKUP MODAL ---
+    function ExportModal({ isOpen, onClose, username, monthKey, dataStore, installments, onImportData, showToast }) {
+      const [activeTab, setActiveTab] = useState('backup');
+      const [importJson, setImportJson] = useState('');
+      const [copied, setCopied] = useState(false);
+
+      if (!isOpen) return null;
+
+      const currentMonthData = dataStore[monthKey] || { incomes: [], transactions: [], bills: [], installmentPaidKeys: [] };
+      const totalIncomes = currentMonthData.incomes.reduce((a, b) => a + b.amount, 0);
+      const totalTrans = currentMonthData.transactions.reduce((a, b) => a + b.amount, 0);
+      const totalBills = currentMonthData.bills.reduce((a, b) => a + b.amount, 0);
+      const totalInstallments = installments.reduce((a, b) => a + b.amount, 0);
+      const totalExpenses = totalTrans + totalBills + totalInstallments;
+      const remaining = totalIncomes - totalExpenses;
+
+      const exportPayload = {
+        app: 'BudgetingKU',
+        version: '2.0',
+        exportedAt: new Date().toISOString(),
+        username: username,
+        dataStore: dataStore,
+        installments: installments,
+      };
+
+      const jsonString = JSON.stringify(exportPayload, null, 2);
+
+      const handleDownloadJSON = () => {
+        try {
+          const blob = new Blob([jsonString], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `budgetingku-backup-${username}-${new Date().toISOString().slice(0, 10)}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('success', 'File cadangan JSON berhasil diunduh.');
+        } catch {
+          showToast('error', 'Gagal mengunduh file.');
         }
+      };
 
-        function resetBills() {
-            const monthKey = monthFilter.value;
-            const currentData = getMonthData(monthKey);
-            currentData.bills.forEach(b => b.paid = false);
-            saveData();
+      const handleDownloadHTML = () => {
+        try {
+          const htmlContent = document.documentElement.outerHTML;
+          const blob = new Blob([htmlContent], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'index.html';
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('success', 'File index.html tunggal siap pakai berhasil diunduh!');
+        } catch {
+          showToast('error', 'Gagal mengunduh file HTML.');
         }
+      };
 
-        function toggleInstallmentPaid(index) {
-            const monthKey = monthFilter.value;
-            const currentData = getMonthData(monthKey);
-            const keyIndex = currentData.installmentPaidKeys.indexOf(index);
-
-            if (keyIndex > -1) {
-                currentData.installmentPaidKeys.splice(keyIndex, 1);
-                if (installmentsStore[index].paidMonths > 0) {
-                    installmentsStore[index].paidMonths -= 1;
-                }
-            } else {
-                if ((installmentsStore[index].paidMonths || 0) < installmentsStore[index].tenor) {
-                    currentData.installmentPaidKeys.push(index);
-                    installmentsStore[index].paidMonths = (installmentsStore[index].paidMonths || 0) + 1;
-                }
-            }
-            saveData();
+      const handleCopy = () => {
+        try {
+          navigator.clipboard.writeText(jsonString);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+          showToast('info', 'Teks JSON telah disalin.');
+        } catch {
+          showToast('error', 'Gagal menyalin teks.');
         }
+      };
 
-        function deleteItem(type, index) {
-            const monthKey = monthFilter.value;
-            dataStore[monthKey][type].splice(index, 1);
-            saveData();
+      const handleImport = (e) => {
+        e.preventDefault();
+        try {
+          const parsed = JSON.parse(importJson.trim());
+          const store = parsed.dataStore || parsed;
+          const insts = parsed.installments || [];
+          onImportData(store, insts);
+          setImportJson('');
+          showToast('success', 'Data berhasil dipulihkan!');
+          onClose();
+        } catch {
+          showToast('error', 'Format JSON tidak valid.');
         }
+      };
 
-        function deleteInstallment(index) {
-            installmentsStore.splice(index, 1);
-            saveData();
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <DownloadIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">Cadangkan & Laporan Finansial</h3>
+                  <p className="text-xs text-slate-400">Pengguna: {username}</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex px-4 pt-3 border-b border-slate-100 gap-2">
+              <button
+                onClick={() => setActiveTab('backup')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition ${
+                  activeTab === 'backup' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Cadangkan & Pulihkan
+              </button>
+              <button
+                onClick={() => setActiveTab('report')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition ${
+                  activeTab === 'report' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Ringkasan {formatMonthLabel(monthKey)}
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+              {activeTab === 'backup' ? (
+                <div className="space-y-4">
+                  {/* Download single-file HTML for GitHub */}
+                  <div className="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100 space-y-2">
+                    <h4 className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                      <DownloadIcon className="w-4 h-4 text-indigo-600" />
+                      <span>Unduh File index.html Tunggal (Untuk GitHub)</span>
+                    </h4>
+                    <p className="text-[11px] text-indigo-700 leading-relaxed">
+                      Unduh langsung file <strong>index.html</strong> mandiri ini untuk diunggah ke repository GitHub Anda (GitHub Pages).
+                    </p>
+                    <button
+                      onClick={handleDownloadHTML}
+                      className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <DownloadIcon className="w-4 h-4" />
+                      <span>Unduh index.html untuk GitHub</span>
+                    </button>
+                  </div>
+
+                  {/* JSON Backup */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-700">Ekspor Data Keuangan (JSON)</h4>
+                      <p className="text-[11px] text-slate-400">Unduh data Anda untuk dicadangkan atau dipindahkan.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDownloadJSON}
+                        className="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs"
+                      >
+                        <DownloadIcon className="w-4 h-4" />
+                        <span>Unduh File .JSON</span>
+                      </button>
+                      <button
+                        onClick={handleCopy}
+                        className="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
+                      >
+                        {copied ? <CheckIcon className="w-4 h-4 text-emerald-600" /> : <CopyIcon className="w-4 h-4" />}
+                        <span>{copied ? 'Tersalin' : 'Salin JSON'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* JSON Restore */}
+                  <form onSubmit={handleImport} className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-700">Pulihkan dari Cadangan</h4>
+                      <p className="text-[11px] text-slate-400">Tempelkan teks JSON untuk memulihkan seluruh data Anda.</p>
+                    </div>
+                    <textarea
+                      value={importJson}
+                      onChange={(e) => setImportJson(e.target.value)}
+                      placeholder='Tempel teks JSON di sini...'
+                      rows={3}
+                      className="w-full p-2.5 text-xs font-mono bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!importJson.trim()}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <UploadIcon className="w-4 h-4" />
+                      <span>Pulihkan Data Sekarang</span>
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+                  <div className="text-center pb-2 border-b border-slate-200">
+                    <h4 className="font-extrabold text-sm text-slate-800">Laporan Ringkasan Finansial</h4>
+                    <p className="text-[11px] text-slate-500">Periode: {formatMonthLabel(monthKey)}</p>
+                  </div>
+                  <div className="space-y-1.5 text-slate-600">
+                    <div className="flex justify-between py-1 border-b border-slate-200/60">
+                      <span>Dana Masuk (Pemasukan)</span>
+                      <span className="font-bold text-emerald-600">{formatRupiah(totalIncomes)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/60">
+                      <span>Pengeluaran Harian</span>
+                      <span className="font-bold text-rose-600">{formatRupiah(totalTrans)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/60">
+                      <span>Tagihan Rutin Bulanan</span>
+                      <span className="font-bold text-rose-600">{formatRupiah(totalBills)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/60">
+                      <span>Komitmen Cicilan Tenor</span>
+                      <span className="font-bold text-rose-600">{formatRupiah(totalInstallments)}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-t border-slate-300 font-bold text-slate-800 text-sm">
+                      <span>Sisa Saldo Bersih</span>
+                      <span className={remaining < 0 ? 'text-rose-600' : 'text-indigo-600'}>
+                        {formatRupiah(remaining)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 flex justify-end">
+              <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- MAIN APP ROOT ---
+    function App() {
+      const [currentUser, setCurrentUser] = useState(() => getStoredCurrentUser());
+      const [currentMonthKey, setCurrentMonthKey] = useState(() => getCurrentMonthKey());
+      const [dataStore, setDataStore] = useState({});
+      const [installments, setInstallments] = useState([]);
+      const [toasts, setToasts] = useState([]);
+      const [isExportOpen, setIsExportOpen] = useState(false);
+
+      const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmLabel: 'Ya, Lanjutkan',
+        confirmVariant: 'danger',
+        onConfirm: () => {},
+      });
+
+      const showToast = useCallback((type, message, title) => {
+        const id = `${Date.now()}-${Math.random()}`;
+        setToasts((prev) => [...prev, { id, type, message, title }]);
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 3500);
+      }, []);
+
+      const dismissToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      };
+
+      useEffect(() => {
+        if (currentUser) {
+          setDataStore(getUserMonthDataStore(currentUser));
+          setInstallments(getUserInstallments(currentUser));
+        } else {
+          setDataStore({});
+          setInstallments([]);
         }
+      }, [currentUser]);
 
-        monthFilter.addEventListener('change', render);
+      const updateDataStore = (newStore) => {
+        setDataStore(newStore);
+        if (currentUser) saveUserMonthDataStore(currentUser, newStore);
+      };
 
-        document.getElementById('incomeForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const monthKey = monthFilter.value;
-            const name = document.getElementById('incomeName').value;
-            const amount = Number(document.getElementById('incomeAmount').value);
-            dataStore[monthKey].incomes.push({ name, amount });
-            document.getElementById('incomeName').value = '';
-            document.getElementById('incomeAmount').value = '';
-            saveData();
+      const updateInstallments = (newInsts) => {
+        setInstallments(newInsts);
+        if (currentUser) saveUserInstallments(currentUser, newInsts);
+      };
+
+      const handleLoginSuccess = (user) => {
+        setStoredCurrentUser(user);
+        setCurrentUser(user);
+      };
+
+      const handleLogout = () => {
+        setConfirmModal({
+          isOpen: true,
+          title: 'Keluar dari Akun',
+          message: 'Apakah Anda yakin ingin keluar dari sesi BudgetingKU saat ini?',
+          confirmLabel: 'Keluar',
+          confirmVariant: 'danger',
+          onConfirm: () => {
+            setStoredCurrentUser(null);
+            setCurrentUser(null);
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('info', 'Anda telah keluar dari aplikasi.');
+          },
         });
+      };
 
-        document.getElementById('transForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const monthKey = monthFilter.value;
-            const name = document.getElementById('transName').value;
-            const amount = Number(document.getElementById('transAmount').value);
-            dataStore[monthKey].transactions.push({ name, amount });
-            document.getElementById('transName').value = '';
-            document.getElementById('transAmount').value = '';
-            saveData();
+      const currentMonthData = getOrCreateMonthData(dataStore, currentMonthKey);
+
+      // Incomes
+      const handleAddIncome = (income) => {
+        const newItem = { ...income, id: `inc-${Date.now()}` };
+        updateDataStore({
+          ...dataStore,
+          [currentMonthKey]: {
+            ...currentMonthData,
+            incomes: [newItem, ...currentMonthData.incomes],
+          },
         });
+        showToast('success', `Pemasukan "${newItem.name}" dicatat.`);
+      };
 
-        document.getElementById('billForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const monthKey = monthFilter.value;
-            const name = document.getElementById('billName').value;
-            const amount = Number(document.getElementById('billAmount').value);
-            dataStore[monthKey].bills.push({ name, amount, paid: false });
-            document.getElementById('billName').value = '';
-            document.getElementById('billAmount').value = '';
-            saveData();
+      const handleDeleteIncome = (index) => {
+        const item = currentMonthData.incomes[index];
+        setConfirmModal({
+          isOpen: true,
+          title: 'Hapus Pemasukan',
+          message: `Hapus pemasukan "${item?.name}"?`,
+          confirmLabel: 'Hapus',
+          confirmVariant: 'danger',
+          onConfirm: () => {
+            const next = [...currentMonthData.incomes];
+            next.splice(index, 1);
+            updateDataStore({
+              ...dataStore,
+              [currentMonthKey]: { ...currentMonthData, incomes: next },
+            });
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('info', 'Pemasukan telah dihapus.');
+          },
         });
+      };
 
-        document.getElementById('installmentForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('instName').value;
-            const amount = Number(document.getElementById('instAmount').value);
-            const tenor = Number(document.getElementById('instTenor').value);
-            installmentsStore.push({ name, amount, tenor, paidMonths: 0 });
-            document.getElementById('instName').value = '';
-            document.getElementById('instAmount').value = '';
-            document.getElementById('instTenor').value = '';
-            saveData();
+      // Transactions
+      const handleAddTransaction = (tx) => {
+        const newItem = { ...tx, id: `tx-${Date.now()}` };
+        updateDataStore({
+          ...dataStore,
+          [currentMonthKey]: {
+            ...currentMonthData,
+            transactions: [newItem, ...currentMonthData.transactions],
+          },
         });
+        showToast('success', `Pengeluaran "${newItem.name}" dicatat.`);
+      };
 
-        render();
-    </script>
+      const handleDeleteTransaction = (index) => {
+        const item = currentMonthData.transactions[index];
+        setConfirmModal({
+          isOpen: true,
+          title: 'Hapus Transaksi',
+          message: `Hapus catatan pengeluaran "${item?.name}"?`,
+          confirmLabel: 'Hapus',
+          confirmVariant: 'danger',
+          onConfirm: () => {
+            const next = [...currentMonthData.transactions];
+            next.splice(index, 1);
+            updateDataStore({
+              ...dataStore,
+              [currentMonthKey]: { ...currentMonthData, transactions: next },
+            });
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('info', 'Transaksi telah dihapus.');
+          },
+        });
+      };
+
+      // Bills
+      const handleAddBill = (bill) => {
+        const newItem = { ...bill, id: `bill-${Date.now()}`, paid: false };
+        updateDataStore({
+          ...dataStore,
+          [currentMonthKey]: {
+            ...currentMonthData,
+            bills: [...currentMonthData.bills, newItem],
+          },
+        });
+        showToast('success', `Tagihan "${newItem.name}" ditambahkan.`);
+      };
+
+      const handleToggleBillPaid = (index) => {
+        const next = [...currentMonthData.bills];
+        if (!next[index]) return;
+        const isPaid = !next[index].paid;
+        next[index] = { ...next[index], paid: isPaid };
+        updateDataStore({
+          ...dataStore,
+          [currentMonthKey]: { ...currentMonthData, bills: next },
+        });
+        if (isPaid) showToast('success', `Tagihan "${next[index].name}" ditandai Lunas.`);
+      };
+
+      const handleDeleteBill = (index) => {
+        const item = currentMonthData.bills[index];
+        setConfirmModal({
+          isOpen: true,
+          title: 'Hapus Tagihan',
+          message: `Hapus tagihan "${item?.name}"?`,
+          confirmLabel: 'Hapus',
+          confirmVariant: 'danger',
+          onConfirm: () => {
+            const next = [...currentMonthData.bills];
+            next.splice(index, 1);
+            updateDataStore({
+              ...dataStore,
+              [currentMonthKey]: { ...currentMonthData, bills: next },
+            });
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('info', 'Tagihan telah dihapus.');
+          },
+        });
+      };
+
+      const handleCopyPreviousMonthBills = () => {
+        const prevKey = getAdjacentMonthKey(currentMonthKey, -1);
+        const prevData = dataStore[prevKey];
+        if (!prevData || !prevData.bills || prevData.bills.length === 0) {
+          showToast('warning', `Tidak ada data tagihan rutin di bulan sebelumnya (${formatMonthLabel(prevKey)}).`, 'Salin Gagal');
+          return;
+        }
+
+        const copied = prevData.bills.map((b) => ({
+          id: `bill-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          name: b.name,
+          amount: b.amount,
+          dueDate: b.dueDate,
+          paid: false,
+        }));
+
+        setConfirmModal({
+          isOpen: true,
+          title: 'Salin Tagihan Bulan Lalu',
+          message: `Salin ${copied.length} tagihan dari ${formatMonthLabel(prevKey)} ke bulan ini?`,
+          confirmLabel: 'Salin Sekarang',
+          confirmVariant: 'primary',
+          onConfirm: () => {
+            updateDataStore({
+              ...dataStore,
+              [currentMonthKey]: {
+                ...currentMonthData,
+                bills: [...currentMonthData.bills, ...copied],
+              },
+            });
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('success', `Berhasil menyalin ${copied.length} tagihan dari ${formatMonthLabel(prevKey)}!`);
+          },
+        });
+      };
+
+      const handleResetBills = () => {
+        if (currentMonthData.bills.length === 0) return;
+        setConfirmModal({
+          isOpen: true,
+          title: 'Reset Checklist Tagihan',
+          message: 'Setel ulang status semua tagihan di bulan ini menjadi Belum Dibayar?',
+          confirmLabel: 'Reset Status',
+          confirmVariant: 'danger',
+          onConfirm: () => {
+            const next = currentMonthData.bills.map((b) => ({ ...b, paid: false }));
+            updateDataStore({
+              ...dataStore,
+              [currentMonthKey]: { ...currentMonthData, bills: next },
+            });
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('info', 'Status tagihan bulan ini telah direset.');
+          },
+        });
+      };
+
+      // Installments
+      const handleAddInstallment = (item) => {
+        const newItem = {
+          ...item,
+          id: `inst-${Date.now()}`,
+          paidMonths: 0,
+          createdAt: new Date().toISOString(),
+        };
+        updateInstallments([...installments, newItem]);
+        showToast('success', `Tracker cicilan "${newItem.name}" dibuat.`);
+      };
+
+      const handleToggleInstallmentPaid = (index) => {
+        const inst = installments[index];
+        if (!inst) return;
+
+        const currentPaidKeys = [...(currentMonthData.installmentPaidKeys || [])];
+        const keyIndex = currentPaidKeys.indexOf(index);
+        const nextInsts = [...installments];
+
+        if (keyIndex > -1) {
+          currentPaidKeys.splice(keyIndex, 1);
+          if (inst.paidMonths > 0) {
+            nextInsts[index] = { ...inst, paidMonths: inst.paidMonths - 1 };
+          }
+          showToast('info', `Pembayaran cicilan "${inst.name}" bulan ini dibatalkan.`);
+        } else {
+          if (inst.paidMonths < inst.tenor) {
+            currentPaidKeys.push(index);
+            const nextPaid = inst.paidMonths + 1;
+            nextInsts[index] = { ...inst, paidMonths: nextPaid };
+            showToast('success', `Cicilan "${inst.name}" ke-${nextPaid} berhasil dibayar bulan ini!`);
+          }
+        }
+
+        updateInstallments(nextInsts);
+        updateDataStore({
+          ...dataStore,
+          [currentMonthKey]: {
+            ...currentMonthData,
+            installmentPaidKeys: currentPaidKeys,
+          },
+        });
+      };
+
+      const handleDeleteInstallment = (index) => {
+        const inst = installments[index];
+        setConfirmModal({
+          isOpen: true,
+          title: 'Hapus Tracker Cicilan',
+          message: `Hapus tracker cicilan "${inst?.name}"?`,
+          confirmLabel: 'Hapus',
+          confirmVariant: 'danger',
+          onConfirm: () => {
+            const next = [...installments];
+            next.splice(index, 1);
+            const nextPaidKeys = (currentMonthData.installmentPaidKeys || []).filter((k) => k !== index);
+            updateInstallments(next);
+            updateDataStore({
+              ...dataStore,
+              [currentMonthKey]: { ...currentMonthData, installmentPaidKeys: nextPaidKeys },
+            });
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('info', 'Tracker cicilan telah dihapus.');
+          },
+        });
+      };
+
+      const handleLoadDemo = () => {
+        if (!currentUser) return;
+        setConfirmModal({
+          isOpen: true,
+          title: 'Muat Contoh Data',
+          message: 'Muat data contoh pemasukan, pengeluaran, tagihan, dan cicilan?',
+          confirmLabel: 'Muat Contoh Data',
+          confirmVariant: 'primary',
+          onConfirm: () => {
+            const { store, installments: demoInsts } = seedDemoData(currentUser);
+            setDataStore(store);
+            setInstallments(demoInsts);
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+            showToast('success', 'Contoh data berhasil dimuat!');
+          },
+        });
+      };
+
+      const handleImportData = (newStore, newInsts) => {
+        updateDataStore(newStore);
+        updateInstallments(newInsts);
+      };
+
+      // Totals
+      const totalIncomes = currentMonthData.incomes.reduce((a, b) => a + b.amount, 0);
+      const totalTrans = currentMonthData.transactions.reduce((a, b) => a + b.amount, 0);
+      const totalBills = currentMonthData.bills.reduce((a, b) => a + b.amount, 0);
+      const totalInstallments = installments.reduce((a, b) => a + b.amount, 0);
+      const paidBillsTotal = currentMonthData.bills.filter((b) => b.paid).reduce((a, b) => a + b.amount, 0);
+      const paidInstallmentsTotal = installments.reduce((acc, curr, idx) => {
+        return (currentMonthData.installmentPaidKeys || []).includes(idx) ? acc + curr.amount : acc;
+      }, 0);
+
+      if (!currentUser) {
+        return (
+          <React.Fragment>
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+            <AuthScreen onSuccess={handleLoginSuccess} showToast={showToast} />
+          </React.Fragment>
+        );
+      }
+
+      return (
+        <div className="bg-slate-100 min-h-screen text-slate-800 flex flex-col justify-between">
+          <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+          <ConfirmModal
+            isOpen={confirmModal.isOpen}
+            title={confirmModal.title}
+            message={confirmModal.message}
+            confirmLabel={confirmModal.confirmLabel}
+            confirmVariant={confirmModal.confirmVariant}
+            onConfirm={confirmModal.onConfirm}
+            onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+          />
+
+          <ExportModal
+            isOpen={isExportOpen}
+            onClose={() => setIsExportOpen(false)}
+            username={currentUser}
+            monthKey={currentMonthKey}
+            dataStore={dataStore}
+            installments={installments}
+            onImportData={handleImportData}
+            showToast={showToast}
+          />
+
+          <div>
+            <Header
+              username={currentUser}
+              onLogout={handleLogout}
+              onOpenExport={() => setIsExportOpen(true)}
+              onLoadDemo={handleLoadDemo}
+            />
+
+            <main className="max-w-xl mx-auto p-4 sm:p-5 space-y-4 w-full">
+              <PeriodSelector
+                currentMonthKey={currentMonthKey}
+                onChangeMonth={setCurrentMonthKey}
+              />
+
+              <SummaryCards
+                totalIncomes={totalIncomes}
+                totalTrans={totalTrans}
+                totalBills={totalBills}
+                totalInstallments={totalInstallments}
+                paidBillsTotal={paidBillsTotal}
+                paidInstallmentsTotal={paidInstallmentsTotal}
+              />
+
+              <IncomeSection
+                incomes={currentMonthData.incomes}
+                onAddIncome={handleAddIncome}
+                onDeleteIncome={handleDeleteIncome}
+              />
+
+              <DailyExpenseSection
+                transactions={currentMonthData.transactions}
+                onAddTransaction={handleAddTransaction}
+                onDeleteTransaction={handleDeleteTransaction}
+              />
+
+              <MonthlyBillsSection
+                bills={currentMonthData.bills}
+                onAddBill={handleAddBill}
+                onToggleBillPaid={handleToggleBillPaid}
+                onDeleteBill={handleDeleteBill}
+                onCopyPreviousMonthBills={handleCopyPreviousMonthBills}
+                onResetBills={handleResetBills}
+              />
+
+              <InstallmentsSection
+                installments={installments}
+                installmentPaidKeys={currentMonthData.installmentPaidKeys || []}
+                onAddInstallment={handleAddInstallment}
+                onToggleInstallmentPaid={handleToggleInstallmentPaid}
+                onDeleteInstallment={handleDeleteInstallment}
+              />
+            </main>
+          </div>
+
+          <footer className="text-center text-xs text-slate-400 py-6 border-t border-slate-200/60 mt-8">
+            <p className="font-semibold text-slate-500">BudgetingKU &copy; {new Date().getFullYear()}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Kelola Keuangan Pribadi, Tagihan Rutin & Cicilan Berjangka</p>
+          </footer>
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
 </body>
 </html>
