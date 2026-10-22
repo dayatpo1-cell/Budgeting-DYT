@@ -4,12 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BudgetingKU</title>
-    
-    <!-- PWA Links -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
-
-    <!-- Tailwind CSS CDN -->
+    <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,347 +18,173 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+<body class="bg-slate-100 min-h-screen pb-10 text-slate-800">
 
-    <!-- Header / Navbar -->
-    <header class="bg-white border-b border-slate-200 shadow-sm relative z-10">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-primary text-white p-2.5 rounded-xl shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-900 leading-tight">BudgetingKU</h1>
-                    <p class="text-xs text-slate-500">Buku Kas • Tagihan Rutin • Tracker Cicilan Tenor</p>
-                </div>
-            </div>
-            <button onclick="resetAllData()" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg font-medium hover:bg-rose-100 transition">
-                Reset Data
-            </button>
-        </div>
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-4 text-center shadow-md font-bold text-xl">
+        BudgetingKU
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+    <main class="max-w-md mx-auto p-4 space-y-4">
 
-        <!-- Dashboard Ringkasan -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Pemasukan -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pemasukan</p>
-                        <h3 id="totalIncome" class="text-2xl font-bold text-emerald-600 mt-1">Rp 0</h3>
-                    </div>
-                    <div class="bg-emerald-50 p-2 rounded-xl text-emerald-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                    </div>
-                </div>
-                <p id="incomeCount" class="text-xs text-slate-400 mt-3">0 transaksi masuk</p>
-            </div>
+        <!-- Pemilih Periode Bulan -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+            <label for="monthFilter" class="text-sm font-semibold text-slate-700">Periode Bulan:</label>
+            <input type="month" id="monthFilter" class="px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-medium text-slate-700">
+        </div>
 
-            <!-- Pengeluaran -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pengeluaran</p>
-                        <h3 id="totalExpense" class="text-2xl font-bold text-rose-600 mt-1">Rp 0</h3>
-                    </div>
-                    <div class="bg-rose-50 p-2 rounded-xl text-rose-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
-                    </div>
-                </div>
-                <p id="expenseCount" class="text-xs text-slate-400 mt-3">0 transaksi keluar</p>
-            </div>
+        <!-- Form Input Pemasukan / Gaji -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <h2 class="font-bold text-slate-700 text-base">💰 Pemasukan Bulan Ini</h2>
+            <form id="incomeForm" class="space-y-3">
+                <input type="number" id="incomeInput" placeholder="Masukkan Gaji / Pemasukan" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Simpan Pemasukan</button>
+            </form>
+        </div>
 
-            <!-- Saldo -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sisa Saldo</p>
-                        <h3 id="totalBalance" class="text-2xl font-bold text-slate-900 mt-1">Rp 0</h3>
-                    </div>
-                    <div class="bg-indigo-50 p-2 rounded-xl text-indigo-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                    </div>
-                </div>
-                <p id="balanceStatus" class="text-xs text-slate-400 mt-3">Kondisi Kas Aman</p>
-            </div>
-        </section>
+        <!-- Ringkasan Saldo -->
+        <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center space-y-1">
+            <p class="text-xs font-semibold text-indigo-500 uppercase tracking-wider">Sisa Anggaran Periode Ini</p>
+            <p id="remainingBudget" class="text-2xl font-extrabold text-indigo-700">Rp 0</p>
+        </div>
 
-        <!-- Form & Riwayat Transaksi -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Form Input -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-fit">
-                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <span class="bg-primary/10 text-primary p-1.5 rounded-lg text-xs">➕</span> Tambah Transaksi
-                </h2>
-                <form id="transactionForm" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan / Sumber</label>
-                        <input type="text" id="desc" required placeholder="Contoh: Gaji, Belanja, Bensin" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
-                        <input type="number" id="amount" required placeholder="Contoh: 500000" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Transaksi</label>
-                        <select id="type" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                            <option value="income">Pemasukan (Income)</option>
-                            <option value="expense">Pengeluaran (Expense)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full bg-primary text-white font-medium py-2.5 px-4 rounded-xl text-sm hover:bg-indigo-700 transition shadow-md shadow-indigo-100">
-                        Simpan Transaksi
-                    </button>
-                </form>
-            </div>
+        <!-- Form Pengeluaran / Transaksi -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <h2 class="font-bold text-slate-700 text-base">💸 Catat Pengeluaran</h2>
+            <form id="transForm" class="space-y-3">
+                <input type="text" id="transName" placeholder="Nama Transaksi (Misal: Makan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <input type="number" id="transAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Simpan Transaksi</button>
+            </form>
+        </div>
 
-            <!-- List Riwayat -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <span class="bg-primary/10 text-primary p-1.5 rounded-lg text-xs">📋</span> Riwayat Transaksi
-                </h2>
-                <div class="overflow-x-auto max-h-[380px] overflow-y-auto pr-1">
-                    <div id="transactionList" class="space-y-2.5">
-                        <!-- Data akan dimasukkan lewat JS -->
-                    </div>
-                </div>
+        <!-- Riwayat Transaksi -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <h2 class="font-bold text-slate-700 text-base">📋 Riwayat Transaksi</h2>
+            <div id="transList" class="space-y-2 text-sm text-slate-500">
+                Belum ada catatan transaksi di bulan ini.
             </div>
         </div>
 
-        <!-- Bagian Tagihan & Cicilan Tenor -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Tagihan Rutin Bulanan -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span class="bg-amber-50 text-amber-600 p-1.5 rounded-lg text-xs">💡</span> Tagihan Rutin Bulanan
-                    </h2>
-                    <span id="billSummary" class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium">0 Lunas</span>
-                </div>
-                <form id="billForm" class="space-y-3 mb-4">
-                    <input type="text" id="billName" placeholder="Nama Tagihan (Listrik, Wifi)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    <input type="number" id="billAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    <button type="submit" class="w-full bg-amber-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition">Tambah Tagihan</button>
-                </form>
-                <div id="billList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1"></div>
+        <!-- Tagihan Rutin Bulanan -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="font-bold text-slate-700 text-base">💡 Tagihan Rutin Bulanan</h2>
             </div>
-
-            <!-- Tracker Cicilan Berjangka (Tenor) -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span class="bg-blue-50 text-blue-600 p-1.5 rounded-lg text-xs">⏳</span> Tracker Cicilan Tenor
-                    </h2>
-                    <span id="installmentSummary" class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">0 Aktif</span>
-                </div>
-                <form id="installmentForm" class="space-y-3 mb-4">
-                    <input type="text" id="instName" placeholder="Nama Cicilan (Misal: Cicilan Motor)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="number" id="instAmount" placeholder="Nominal / Bulan" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                        <input type="number" id="instTenor" placeholder="Total Tenor (Bulan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition">Tambah Cicilan</button>
-                </form>
-                <div id="installmentList" class="space-y-3 max-h-[220px] overflow-y-auto pr-1"></div>
+            <form id="billForm" class="space-y-3 mb-4">
+                <input type="text" id="billName" placeholder="Nama Tagihan (Listrik, Wifi)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <input type="number" id="billAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <button type="submit" class="w-full bg-amber-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition">Tambah Tagihan</button>
+            </form>
+            <div id="billList" class="space-y-2 text-sm text-slate-500">
+                Belum ada tagihan rutin.
             </div>
         </div>
 
     </main>
 
-    <!-- JavaScript Aplikasi -->
     <script>
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        let bills = JSON.parse(localStorage.getItem('bills')) || [];
-        let installments = JSON.parse(localStorage.getItem('installments')) || [];
-
-        function formatRupiah(angka) {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        // Inisialisasi Service Worker untuk PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
         }
 
-        // --- TRANSAKSI ---
-        document.getElementById('transactionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const desc = document.getElementById('desc').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            const type = document.getElementById('type').value;
+        // Set Default Bulan saat ini (YYYY-MM)
+        const monthFilter = document.getElementById('monthFilter');
+        const now = new Date();
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        monthFilter.value = currentMonthStr;
 
-            transactions.unshift({ id: Date.now(), desc, amount, type, date: new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) });
-            saveAndRender();
-            this.reset();
-        });
+        // Ambil data dari LocalStorage
+        let dataStore = JSON.parse(localStorage.getItem('budgeting_data')) || {};
 
-        function deleteTransaction(id) {
-            transactions = transactions.filter(t => t.id !== id);
-            saveAndRender();
-        }
-
-        // --- TAGIHAN RUTIN ---
-        document.getElementById('billForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const name = document.getElementById('billName').value;
-            const amount = parseFloat(document.getElementById('billAmount').value);
-
-            bills.push({ id: Date.now(), name, amount, paid: false });
-            saveAndRender();
-            this.reset();
-        });
-
-        function toggleBill(id) {
-            bills = bills.map(b => b.id === id ? { ...b, paid: !b.paid } : b);
-            saveAndRender();
-        }
-
-        function deleteBill(id) {
-            bills = bills.filter(b => b.id !== id);
-            saveAndRender();
-        }
-
-        // --- CICILAN TENOR ---
-        document.getElementById('installmentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const name = document.getElementById('instName').value;
-            const amount = parseFloat(document.getElementById('instAmount').value);
-            const tenor = parseInt(document.getElementById('instTenor').value);
-
-            installments.push({ id: Date.now(), name, amount, tenor, paidCount: 0 });
-            saveAndRender();
-            this.reset();
-        });
-
-        function payInstallment(id) {
-            installments = installments.map(i => {
-                if (i.id === id && i.paidCount < i.tenor) {
-                    return { ...i, paidCount: i.paidCount + 1 };
-                }
-                return i;
-            });
-            saveAndRender();
-        }
-
-        function deleteInstallment(id) {
-            installments = installments.filter(i => i.id !== id);
-            saveAndRender();
-        }
-
-        function resetAllData() {
-            if(confirm('Yakin ingin mereset seluruh data catatan?')) {
-                transactions = [];
-                bills = [];
-                installments = [];
-                saveAndRender();
+        function getMonthData(monthKey) {
+            if (!dataStore[monthKey]) {
+                dataStore[monthKey] = { income: 0, transactions: [], bills: [] };
             }
+            return dataStore[monthKey];
         }
 
-        function saveAndRender() {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            localStorage.setItem('bills', JSON.stringify(bills));
-            localStorage.setItem('installments', JSON.stringify(installments));
+        function saveData() {
+            localStorage.setItem('budgeting_data', JSON.stringify(dataStore));
             render();
         }
 
         function render() {
-            let totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-            let totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-            let balance = totalIncome - totalExpense;
+            const monthKey = monthFilter.value;
+            const currentData = getMonthData(monthKey);
 
-            document.getElementById('totalIncome').innerText = formatRupiah(totalIncome);
-            document.getElementById('incomeCount').innerText = `${transactions.filter(t => t.type === 'income').length} transaksi masuk`;
+            // Tampilkan Income
+            document.getElementById('incomeInput').value = currentData.income || '';
 
-            document.getElementById('totalExpense').innerText = formatRupiah(totalExpense);
-            document.getElementById('expenseCount').innerText = `${transactions.filter(t => t.type === 'expense').length} transaksi keluar`;
+            // Hitung Total Pengeluaran
+            const totalTrans = currentData.transactions.reduce((acc, curr) => acc + curr.amount, 0);
+            const totalBills = currentData.bills.reduce((acc, curr) => acc + curr.amount, 0);
+            const remaining = currentData.income - (totalTrans + totalBills);
 
-            const balEl = document.getElementById('totalBalance');
-            balEl.innerText = formatRupiah(balance);
-            balEl.className = `text-2xl font-bold mt-1 ${balance < 0 ? 'text-rose-600' : 'text-slate-900'}`;
+            document.getElementById('remainingBudget').innerText = `Rp ${remaining.toLocaleString('id-ID')}`;
 
-            // Render Transactions
-            const txList = document.getElementById('transactionList');
-            if (transactions.length === 0) {
-                txList.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Belum ada catatan transaksi.</p>`;
+            // Render Transaksi
+            const transList = document.getElementById('transList');
+            if (currentData.transactions.length === 0) {
+                transList.innerHTML = '<p class="text-xs text-slate-400">Belum ada catatan transaksi di bulan ini.</p>';
             } else {
-                txList.innerHTML = transactions.map(t => `
-                    <div class="flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl transition">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-800">${t.desc}</p>
-                            <p class="text-[11px] text-slate-400">${t.date}</p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
-                                ${t.type === 'income' ? '+' : '-'} ${formatRupiah(t.amount)}
-                            </span>
-                            <button onclick="deleteTransaction(${t.id})" class="text-slate-300 hover:text-rose-500 text-xs px-1.5 py-1">✕</button>
-                        </div>
+                transList.innerHTML = currentData.transactions.map(item => `
+                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="font-medium text-slate-700">${item.name}</span>
+                        <span class="font-bold text-rose-600">- Rp ${item.amount.toLocaleString('id-ID')}</span>
                     </div>
                 `).join('');
             }
 
-            // Render Bills
+            // Render Tagihan
             const billList = document.getElementById('billList');
-            let paidBillsCount = bills.filter(b => b.paid).length;
-            document.getElementById('billSummary').innerText = `${paidBillsCount}/${bills.length} Lunas`;
-
-            if (bills.length === 0) {
-                billList.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">Belum ada tagihan rutin.</p>`;
+            if (currentData.bills.length === 0) {
+                billList.innerHTML = '<p class="text-xs text-slate-400">Belum ada tagihan rutin di bulan ini.</p>';
             } else {
-                billList.innerHTML = bills.map(b => `
-                    <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl">
-                        <label class="flex items-center gap-2.5 cursor-pointer flex-1">
-                            <input type="checkbox" ${b.paid ? 'checked' : ''} onclick="toggleBill(${b.id})" class="w-4 h-4 accent-primary rounded">
-                            <span class="text-sm ${b.paid ? 'line-through text-slate-400 font-normal' : 'text-slate-700 font-medium'}">${b.name}</span>
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-semibold text-slate-600">${formatRupiah(b.amount)}</span>
-                            <button onclick="deleteBill(${b.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
-                        </div>
+                billList.innerHTML = currentData.bills.map(item => `
+                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="font-medium text-slate-700">${item.name}</span>
+                        <span class="font-bold text-amber-600">Rp ${item.amount.toLocaleString('id-ID')}</span>
                     </div>
                 `).join('');
             }
-
-            // Render Installments
-            const instList = document.getElementById('installmentList');
-            document.getElementById('installmentSummary').innerText = `${installments.length} Aktif`;
-
-            if (installments.length === 0) {
-                instList.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">Belum ada cicilan tenor.</p>`;
-            } else {
-                instList.innerHTML = installments.map(i => {
-                    let progressPercent = Math.round((i.paidCount / i.tenor) * 100);
-                    let isCompleted = i.paidCount >= i.tenor;
-                    return `
-                        <div class="p-3 bg-slate-50 rounded-xl space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm font-semibold text-slate-800">${i.name}</span>
-                                <button onclick="deleteInstallment(${i.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
-                            </div>
-                            <div class="flex justify-between text-xs text-slate-500">
-                                <span>Cicilan ke-<b>${i.paidCount}</b> dari ${i.tenor}</span>
-                                <span class="font-semibold text-indigo-600">${formatRupiah(i.amount)}/bln</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                                <div class="bg-primary h-full transition-all duration-300" style="width: ${progressPercent}%"></div>
-                            </div>
-                            <div class="flex justify-between items-center pt-1">
-                                <span class="text-[11px] text-slate-400">${isCompleted ? '🎉 Lunas' : progressPercent + '% Selesai'}</span>
-                                ${!isCompleted ? `<button onclick="payInstallment(${i.id})" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg font-medium hover:bg-indigo-100 transition">Bayar Bulan Ini</button>` : '<span class="text-xs text-emerald-600 font-bold">Lunas Sempurna</span>'}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
         }
 
+        // Event Listeners
+        monthFilter.addEventListener('change', render);
+
+        document.getElementById('incomeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const monthKey = monthFilter.value;
+            dataStore[monthKey].income = Number(document.getElementById('incomeInput').value);
+            saveData();
+        });
+
+        document.getElementById('transForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const monthKey = monthFilter.value;
+            const name = document.getElementById('transName').value;
+            const amount = Number(document.getElementById('transAmount').value);
+            dataStore[monthKey].transactions.push({ name, amount });
+            document.getElementById('transName').value = '';
+            document.getElementById('transAmount').value = '';
+            saveData();
+        });
+
+        document.getElementById('billForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const monthKey = monthFilter.value;
+            const name = document.getElementById('billName').value;
+            const amount = Number(document.getElementById('billAmount').value);
+            dataStore[monthKey].bills.push({ name, amount });
+            document.getElementById('billName').value = '';
+            document.getElementById('billAmount').value = '';
+            saveData();
+        });
+
+        // First Load
         render();
-    </script>
-    
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
     </script>
 </body>
 </html>
