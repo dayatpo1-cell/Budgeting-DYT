@@ -1,3 +1,0 @@
-```javascript
-     self.addEventListener('fetch', function(event) {});
-     ```
