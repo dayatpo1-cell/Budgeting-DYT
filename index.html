@@ -40,7 +40,7 @@
                 <p id="totalIncomeText" class="text-sm font-extrabold text-emerald-700 mt-0.5">Rp 0</p>
             </div>
             <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Pengeluaran & Tagihan</p>
+                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Total Pengeluaran</p>
                 <p id="totalExpenseText" class="text-sm font-extrabold text-rose-700 mt-0.5">Rp 0</p>
             </div>
             <div class="col-span-2 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center space-y-0.5">
@@ -182,20 +182,17 @@
             const totalIncomes = currentData.incomes.reduce((acc, curr) => acc + curr.amount, 0);
             const totalTrans = currentData.transactions.reduce((acc, curr) => acc + curr.amount, 0);
             
-            const totalPaidBills = currentData.bills
-                .filter(item => item.paid)
-                .reduce((acc, curr) => acc + curr.amount, 0);
+            // Total seluruh tagihan (baik yang sudah dicentang lunas maupun belum)
+            const totalAllBills = currentData.bills.reduce((acc, curr) => acc + curr.amount, 0);
 
-            let totalPaidInstallments = 0;
-            installmentsStore.forEach((inst, index) => {
-                if (currentData.installmentPaidKeys.includes(index)) {
-                    totalPaidInstallments += inst.amount;
-                }
-            });
+            // Total seluruh cicilan bulanan yang aktif/wajib dibayar di bulan ini
+            const totalAllInstallments = installmentsStore.reduce((acc, curr) => acc + curr.amount, 0);
 
-            const totalExpenses = totalTrans + totalPaidBills + totalPaidInstallments;
+            // Total keseluruhan pengeluaran (Harian + Semua Tagihan + Semua Cicilan Bulan Ini)
+            const totalExpenses = totalTrans + totalAllBills + totalAllInstallments;
             const remaining = totalIncomes - totalExpenses;
 
+            // Render Dashboard Stats
             document.getElementById('totalIncomeText').innerText = `Rp ${totalIncomes.toLocaleString('id-ID')}`;
             document.getElementById('totalExpenseText').innerText = `Rp ${totalExpenses.toLocaleString('id-ID')}`;
             document.getElementById('remainingBudget').innerText = `Rp ${remaining.toLocaleString('id-ID')}`;
@@ -232,7 +229,7 @@
                 `).join('');
             }
 
-            // Render Tagihan dengan Checklist & Badge Status ala Screenshot
+            // Render Tagihan dengan Checklist
             const billList = document.getElementById('billList');
             if (currentData.bills.length === 0) {
                 billList.innerHTML = '<p class="text-xs text-slate-400">Belum ada tagihan rutin.</p>';
@@ -259,7 +256,7 @@
                 `).join('');
             }
 
-            // Render Tracker Cicilan ala Screenshot
+            // Render Tracker Cicilan
             const installmentList = document.getElementById('installmentList');
             if (installmentsStore.length === 0) {
                 installmentList.innerHTML = '<p class="text-xs text-slate-400">Belum ada cicilan berjangka.</p>';
