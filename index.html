@@ -40,7 +40,7 @@
                 <p id="totalIncomeText" class="text-sm font-extrabold text-emerald-700 mt-0.5">Rp 0</p>
             </div>
             <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Dana Keluar</p>
+                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Pengeluaran & Tagihan (Lunas)</p>
                 <p id="totalExpenseText" class="text-sm font-extrabold text-rose-700 mt-0.5">Rp 0</p>
             </div>
             <div class="col-span-2 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center space-y-0.5">
@@ -62,9 +62,9 @@
             </div>
         </div>
 
-        <!-- Form Pengeluaran / Transaksi -->
+        <!-- Form Pengeluaran Harian / Transaksi -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base">💸 Catat Pengeluaran</h2>
+            <h2 class="font-bold text-slate-700 text-base">💸 Catat Pengeluaran Harian</h2>
             <form id="transForm" class="space-y-3 mb-4">
                 <input type="text" id="transName" placeholder="Nama Transaksi (Misal: Makan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
                 <input type="number" id="transAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
@@ -75,9 +75,12 @@
             </div>
         </div>
 
-        <!-- Tagihan Rutin Bulanan -->
+        <!-- Tagihan Rutin Bulanan (Dengan Checklist) -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base">💡 Tagihan Rutin Bulanan</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="font-bold text-slate-700 text-base">💡 Tagihan Rutin Bulanan</h2>
+                <span id="billStatusText" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">0/0 Lunas</span>
+            </div>
             <form id="billForm" class="space-y-3 mb-4">
                 <input type="text" id="billName" placeholder="Nama Tagihan (Listrik, Wifi)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
                 <input type="number" id="billAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
@@ -85,6 +88,20 @@
             </form>
             <div id="billList" class="space-y-2 text-sm text-slate-500">
                 Belum ada tagihan rutin.
+            </div>
+        </div>
+
+        <!-- Tracker Cicilan Tenor (Progres Sisa Cicilan) -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <h2 class="font-bold text-slate-700 text-base">⏳ Tracker Cicilan Tenor</h2>
+            <form id="installmentForm" class="space-y-3 mb-4">
+                <input type="text" id="instName" placeholder="Nama Cicilan (Misal: Cicilan HP)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <input type="number" id="instAmount" placeholder="Nominal / Bulan" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <input type="number" id="instTenor" placeholder="Total Tenor (Bulan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition">Tambah Cicilan</button>
+            </form>
+            <div id="installmentList" class="space-y-3 text-sm text-slate-500">
+                Belum ada cicilan tenor.
             </div>
         </div>
 
@@ -101,19 +118,21 @@
         monthFilter.value = currentMonthStr;
 
         let dataStore = JSON.parse(localStorage.getItem('budgeting_data')) || {};
+        let installmentsStore = JSON.parse(localStorage.getItem('budgeting_installments')) || [];
 
         function getMonthData(monthKey) {
             if (!dataStore[monthKey]) {
-                dataStore[monthKey] = { incomes: [], transactions: [], bills: [] };
+                dataStore[monthKey] = { incomes: [], transactions: [], bills: [], installmentPaidKeys: [] };
             }
-            if (!Array.isArray(dataStore[monthKey].incomes)) {
-                dataStore[monthKey].incomes = dataStore[monthKey].income ? [{ name: 'Gaji Utamamu', amount: dataStore[monthKey].income }] : [];
+            if (!dataStore[monthKey].installmentPaidKeys) {
+                dataStore[monthKey].installmentPaidKeys = [];
             }
             return dataStore[monthKey];
         }
 
         function saveData() {
             localStorage.setItem('budgeting_data', JSON.stringify(dataStore));
+            localStorage.setItem('budgeting_installments', JSON.stringify(installmentsStore));
             render();
         }
 
@@ -121,11 +140,24 @@
             const monthKey = monthFilter.value;
             const currentData = getMonthData(monthKey);
 
+            // Calculate Totals
             const totalIncomes = currentData.incomes.reduce((acc, curr) => acc + curr.amount, 0);
             const totalTrans = currentData.transactions.reduce((acc, curr) => acc + curr.amount, 0);
-            const totalBills = currentData.bills.reduce((acc, curr) => acc + curr.amount, 0);
             
-            const totalExpenses = totalTrans + totalBills;
+            // Only count checked/paid bills
+            const totalPaidBills = currentData.bills
+                .filter(item => item.paid)
+                .reduce((acc, curr) => acc + curr.amount, 0);
+
+            // Only count paid installments in this month
+            let totalPaidInstallments = 0;
+            installmentsStore.forEach((inst, index) => {
+                if (currentData.installmentPaidKeys.includes(index)) {
+                    totalPaidInstallments += inst.amount;
+                }
+            });
+
+            const totalExpenses = totalTrans + totalPaidBills + totalPaidInstallments;
             const remaining = totalIncomes - totalExpenses;
 
             // Render Dashboard Stats
@@ -133,7 +165,7 @@
             document.getElementById('totalExpenseText').innerText = `Rp ${totalExpenses.toLocaleString('id-ID')}`;
             document.getElementById('remainingBudget').innerText = `Rp ${remaining.toLocaleString('id-ID')}`;
 
-            // Render Multi-Incomes
+            // Render Incomes
             const incomeList = document.getElementById('incomeList');
             if (currentData.incomes.length === 0) {
                 incomeList.innerHTML = '<p class="text-xs text-slate-400">Belum ada sumber pemasukan di bulan ini.</p>';
@@ -165,26 +197,96 @@
                 `).join('');
             }
 
-            // Render Tagihan
+            // Render Tagihan dengan Checklist
             const billList = document.getElementById('billList');
+            const paidCount = currentData.bills.filter(b => b.paid).length;
+            document.getElementById('billStatusText').innerText = `${paidCount}/${currentData.bills.length} Lunas`;
+
             if (currentData.bills.length === 0) {
                 billList.innerHTML = '<p class="text-xs text-slate-400">Belum ada tagihan rutin.</p>';
             } else {
                 billList.innerHTML = currentData.bills.map((item, index) => `
-                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100">
-                        <span class="font-medium text-slate-700">${item.name}</span>
+                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100 ${item.paid ? 'opacity-60 bg-slate-100' : ''}">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" ${item.paid ? 'checked' : ''} onchange="toggleBillPaid(${index})" class="w-4 h-4 accent-amber-600 rounded">
+                            <span class="font-medium text-slate-700 ${item.paid ? 'line-through' : ''}">${item.name}</span>
+                        </div>
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-amber-600">Rp ${item.amount.toLocaleString('id-ID')}</span>
+                            <span class="font-bold ${item.paid ? 'text-slate-400' : 'text-amber-600'}">Rp ${item.amount.toLocaleString('id-ID')}</span>
                             <button onclick="deleteItem('bills', ${index})" class="text-xs text-rose-500 font-bold px-1.5 py-0.5 bg-white rounded-lg border border-rose-200">✕</button>
                         </div>
                     </div>
                 `).join('');
             }
+
+            // Render Cicilan Tenor
+            const installmentList = document.getElementById('installmentList');
+            if (installmentsStore.length === 0) {
+                installmentList.innerHTML = '<p class="text-xs text-slate-400">Belum ada cicilan tenor.</p>';
+            } else {
+                installmentList.innerHTML = installmentsStore.map((inst, index) => {
+                    const isPaidThisMonth = currentData.installmentPaidKeys.includes(index);
+                    const paidMonths = inst.paidMonths || 0;
+                    const remainingMonths = inst.tenor - paidMonths;
+                    const remainingAmount = remainingMonths * inst.amount;
+
+                    return `
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-slate-800">${inst.name}</p>
+                                    <p class="text-xs text-slate-500">Rp ${inst.amount.toLocaleString('id-ID')} / bulan</p>
+                                </div>
+                                <button onclick="deleteInstallment(${index})" class="text-xs text-rose-500 font-bold px-1.5 py-0.5 bg-white rounded-lg border border-rose-200">✕</button>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-slate-600 pt-1 border-t border-slate-200">
+                                <span>Progres: <b>${paidMonths}/${inst.tenor} Bulan</b></span>
+                                <span>Sisa: <b class="text-rose-600">Rp ${remainingAmount.toLocaleString('id-ID')}</b></span>
+                            </div>
+                            <button onclick="toggleInstallmentPaid(${index})" class="w-full py-1.5 rounded-lg text-xs font-bold transition ${isPaidThisMonth ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-600 text-white hover:bg-blue-700'}">
+                                ${isPaidThisMonth ? '✓ Sudah Dibayar Bulan Ini' : 'Bayar Cicilan Bulan Ini'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function toggleBillPaid(index) {
+            const monthKey = monthFilter.value;
+            dataStore[monthKey].bills[index].paid = !dataStore[monthKey].bills[index].paid;
+            saveData();
+        }
+
+        function toggleInstallmentPaid(index) {
+            const monthKey = monthFilter.value;
+            const currentData = getMonthData(monthKey);
+            const keyIndex = currentData.installmentPaidKeys.indexOf(index);
+
+            if (keyIndex > -1) {
+                // Unpay
+                currentData.installmentPaidKeys.splice(keyIndex, 1);
+                if (installmentsStore[index].paidMonths > 0) {
+                    installmentsStore[index].paidMonths -= 1;
+                }
+            } else {
+                // Pay
+                if ((installmentsStore[index].paidMonths || 0) < installmentsStore[index].tenor) {
+                    currentData.installmentPaidKeys.push(index);
+                    installmentsStore[index].paidMonths = (installmentsStore[index].paidMonths || 0) + 1;
+                }
+            }
+            saveData();
         }
 
         function deleteItem(type, index) {
             const monthKey = monthFilter.value;
             dataStore[monthKey][type].splice(index, 1);
+            saveData();
+        }
+
+        function deleteInstallment(index) {
+            installmentsStore.splice(index, 1);
             saveData();
         }
 
@@ -217,9 +319,21 @@
             const monthKey = monthFilter.value;
             const name = document.getElementById('billName').value;
             const amount = Number(document.getElementById('billAmount').value);
-            dataStore[monthKey].bills.push({ name, amount });
+            dataStore[monthKey].bills.push({ name, amount, paid: false });
             document.getElementById('billName').value = '';
             document.getElementById('billAmount').value = '';
+            saveData();
+        });
+
+        document.getElementById('installmentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('instName').value;
+            const amount = Number(document.getElementById('instAmount').value);
+            const tenor = Number(document.getElementById('instTenor').value);
+            installmentsStore.push({ name, amount, tenor, paidMonths: 0 });
+            document.getElementById('instName').value = '';
+            document.getElementById('instAmount').value = '';
+            document.getElementById('instTenor').value = '';
             saveData();
         });
 
