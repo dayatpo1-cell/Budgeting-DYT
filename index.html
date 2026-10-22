@@ -18,7 +18,7 @@
         }
     </script>
 </head>
-<body class="bg-slate-100 min-h-screen pb-10 text-slate-800">
+<body class="bg-slate-100 min-h-screen pb-12 text-slate-800">
 
     <!-- Header -->
     <header class="bg-indigo-600 text-white p-4 text-center shadow-md font-bold text-xl">
@@ -40,7 +40,7 @@
                 <p id="totalIncomeText" class="text-sm font-extrabold text-emerald-700 mt-0.5">Rp 0</p>
             </div>
             <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Pengeluaran & Tagihan (Lunas)</p>
+                <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Pengeluaran & Tagihan</p>
                 <p id="totalExpenseText" class="text-sm font-extrabold text-rose-700 mt-0.5">Rp 0</p>
             </div>
             <div class="col-span-2 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center space-y-0.5">
@@ -49,59 +49,98 @@
             </div>
         </div>
 
-        <!-- Form Input Multiple Pemasukan -->
+        <!-- Form Input Pemasukan -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base">💰 Pemasukan Bulan Ini</h2>
-            <form id="incomeForm" class="space-y-3 mb-4">
-                <input type="text" id="incomeName" placeholder="Sumber Pemasukan (Gaji, Komisi, Bonus)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="incomeAmount" placeholder="Nominal Pemasukan" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2"><span>💰</span> Pemasukan Bulan Ini</h2>
+            <form id="incomeForm" class="space-y-3 mb-3">
+                <input type="text" id="incomeName" placeholder="Sumber (Gaji, Komisi, Bonus)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <input type="number" id="incomeAmount" placeholder="Nominal (Rp)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
                 <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-emerald-700 transition">Tambah Pemasukan</button>
             </form>
             <div id="incomeList" class="space-y-2 text-sm text-slate-500">
-                Belum ada sumber pemasukan di bulan ini.
+                Belum ada pemasukan.
             </div>
         </div>
 
-        <!-- Form Pengeluaran Harian / Transaksi -->
+        <!-- Form Catat Pengeluaran Harian -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base">💸 Catat Pengeluaran Harian</h2>
-            <form id="transForm" class="space-y-3 mb-4">
-                <input type="text" id="transName" placeholder="Nama Transaksi (Misal: Makan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="transAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2"><span>💸</span> Catat Pengeluaran Harian</h2>
+            <form id="transForm" class="space-y-3 mb-3">
+                <input type="text" id="transName" placeholder="Nama Transaksi (Makan, Belanja)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                <input type="number" id="transAmount" placeholder="Nominal (Rp)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
                 <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Simpan Transaksi</button>
             </form>
             <div id="transList" class="space-y-2 text-sm text-slate-500">
-                Belum ada catatan transaksi di bulan ini.
+                Belum ada pengeluaran harian.
             </div>
         </div>
 
-        <!-- Tagihan Rutin Bulanan (Dengan Checklist) -->
+        <!-- Tambah Tagihan Rutin Bulanan -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2 text-indigo-600"><span>📄</span> Tambah Tagihan Rutin Bulanan</h2>
+            <form id="billForm" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Tagihan</label>
+                    <input type="text" id="billName" placeholder="Misal: Listrik PLN, WiFi, Kost, Asuransi" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nominal Tagihan (Rp)</label>
+                    <input type="number" id="billAmount" placeholder="350000" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                    <span>⊕</span> Tambah ke Daftar
+                </button>
+            </form>
+        </div>
+
+        <!-- Checklist Tagihan Bulan Ini -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-bold text-slate-700 text-base">💡 Tagihan Rutin Bulanan</h2>
-                <span id="billStatusText" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-semibold">0/0 Lunas</span>
+                <div>
+                    <h2 class="font-bold text-slate-700 text-base">Checklist Tagihan Bulan Ini</h2>
+                    <p class="text-[11px] text-slate-400">Centang kotak untuk menandai Lunas</p>
+                </div>
+                <button onclick="resetBills()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-xl font-medium transition">
+                    Reset Status
+                </button>
             </div>
-            <form id="billForm" class="space-y-3 mb-4">
-                <input type="text" id="billName" placeholder="Nama Tagihan (Listrik, Wifi)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="billAmount" placeholder="Nominal" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <button type="submit" class="w-full bg-amber-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition">Tambah Tagihan</button>
-            </form>
-            <div id="billList" class="space-y-2 text-sm text-slate-500">
+            <div id="billList" class="space-y-2.5 text-sm pt-2">
                 Belum ada tagihan rutin.
             </div>
         </div>
 
-        <!-- Tracker Cicilan Tenor (Progres Sisa Cicilan) -->
+        <!-- Tambah Cicilan Berjangka (Tenor) -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-            <h2 class="font-bold text-slate-700 text-base">⏳ Tracker Cicilan Tenor</h2>
-            <form id="installmentForm" class="space-y-3 mb-4">
-                <input type="text" id="instName" placeholder="Nama Cicilan (Misal: Cicilan HP)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="instAmount" placeholder="Nominal / Bulan" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <input type="number" id="instTenor" placeholder="Total Tenor (Bulan)" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition">Tambah Cicilan</button>
+            <h2 class="font-bold text-slate-700 text-base flex items-center gap-2 text-indigo-600"><span>⏱️</span> Tambah Cicilan Berjangka (Tenor)</h2>
+            <form id="installmentForm" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Barang / Tagihan</label>
+                    <input type="text" id="instName" placeholder="Contoh: Smartphone, Laptop, Kulkas" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nominal / Bulan (Rp)</label>
+                        <input type="number" id="instAmount" placeholder="500000" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tenor (Bulan)</label>
+                        <input type="number" id="instTenor" placeholder="6" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                    <span>⊕</span> Simpan Tracker Cicilan
+                </button>
             </form>
-            <div id="installmentList" class="space-y-3 text-sm text-slate-500">
-                Belum ada cicilan tenor.
+        </div>
+
+        <!-- Daftar Tracker Cicilan -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+            <div>
+                <h2 class="font-bold text-slate-700 text-base">Daftar Tracker Cicilan</h2>
+                <p class="text-[11px] text-slate-400">Pantau progres tenor dan klik tombol bayar bulanan</p>
+            </div>
+            <div id="installmentList" class="space-y-3 pt-2">
+                Belum ada cicilan berjangka.
             </div>
         </div>
 
@@ -140,16 +179,13 @@
             const monthKey = monthFilter.value;
             const currentData = getMonthData(monthKey);
 
-            // Calculate Totals
             const totalIncomes = currentData.incomes.reduce((acc, curr) => acc + curr.amount, 0);
             const totalTrans = currentData.transactions.reduce((acc, curr) => acc + curr.amount, 0);
             
-            // Only count checked/paid bills
             const totalPaidBills = currentData.bills
                 .filter(item => item.paid)
                 .reduce((acc, curr) => acc + curr.amount, 0);
 
-            // Only count paid installments in this month
             let totalPaidInstallments = 0;
             installmentsStore.forEach((inst, index) => {
                 if (currentData.installmentPaidKeys.includes(index)) {
@@ -160,7 +196,6 @@
             const totalExpenses = totalTrans + totalPaidBills + totalPaidInstallments;
             const remaining = totalIncomes - totalExpenses;
 
-            // Render Dashboard Stats
             document.getElementById('totalIncomeText').innerText = `Rp ${totalIncomes.toLocaleString('id-ID')}`;
             document.getElementById('totalExpenseText').innerText = `Rp ${totalExpenses.toLocaleString('id-ID')}`;
             document.getElementById('remainingBudget').innerText = `Rp ${remaining.toLocaleString('id-ID')}`;
@@ -168,14 +203,14 @@
             // Render Incomes
             const incomeList = document.getElementById('incomeList');
             if (currentData.incomes.length === 0) {
-                incomeList.innerHTML = '<p class="text-xs text-slate-400">Belum ada sumber pemasukan di bulan ini.</p>';
+                incomeList.innerHTML = '<p class="text-xs text-slate-400">Belum ada pemasukan.</p>';
             } else {
                 incomeList.innerHTML = currentData.incomes.map((item, index) => `
-                    <div class="flex justify-between items-center p-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <div class="flex justify-between items-center p-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
                         <span class="font-medium text-slate-700">${item.name}</span>
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-emerald-600">+ Rp ${item.amount.toLocaleString('id-ID')}</span>
-                            <button onclick="deleteItem('incomes', ${index})" class="text-xs text-rose-500 font-bold px-1.5 py-0.5 bg-white rounded-lg border border-rose-200">✕</button>
+                            <button onclick="deleteItem('incomes', ${index})" class="text-xs text-rose-500 font-bold px-2 py-1 bg-white rounded-lg border border-rose-200">🗑️</button>
                         </div>
                     </div>
                 `).join('');
@@ -184,67 +219,84 @@
             // Render Transaksi
             const transList = document.getElementById('transList');
             if (currentData.transactions.length === 0) {
-                transList.innerHTML = '<p class="text-xs text-slate-400">Belum ada catatan transaksi di bulan ini.</p>';
+                transList.innerHTML = '<p class="text-xs text-slate-400">Belum ada pengeluaran harian.</p>';
             } else {
                 transList.innerHTML = currentData.transactions.map((item, index) => `
-                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                         <span class="font-medium text-slate-700">${item.name}</span>
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-rose-600">- Rp ${item.amount.toLocaleString('id-ID')}</span>
-                            <button onclick="deleteItem('transactions', ${index})" class="text-xs text-rose-500 font-bold px-1.5 py-0.5 bg-white rounded-lg border border-rose-200">✕</button>
+                            <button onclick="deleteItem('transactions', ${index})" class="text-xs text-rose-500 font-bold px-2 py-1 bg-white rounded-lg border border-rose-200">🗑️</button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            // Render Tagihan dengan Checklist
+            // Render Tagihan dengan Checklist & Badge Status ala Screenshot
             const billList = document.getElementById('billList');
-            const paidCount = currentData.bills.filter(b => b.paid).length;
-            document.getElementById('billStatusText').innerText = `${paidCount}/${currentData.bills.length} Lunas`;
-
             if (currentData.bills.length === 0) {
                 billList.innerHTML = '<p class="text-xs text-slate-400">Belum ada tagihan rutin.</p>';
             } else {
                 billList.innerHTML = currentData.bills.map((item, index) => `
-                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100 ${item.paid ? 'opacity-60 bg-slate-100' : ''}">
-                        <div class="flex items-center gap-2.5">
-                            <input type="checkbox" ${item.paid ? 'checked' : ''} onchange="toggleBillPaid(${index})" class="w-4 h-4 accent-amber-600 rounded">
-                            <span class="font-medium text-slate-700 ${item.paid ? 'line-through' : ''}">${item.name}</span>
+                    <div class="flex items-center justify-between p-3 rounded-2xl border transition ${item.paid ? 'bg-emerald-50/60 border-emerald-200' : 'bg-white border-slate-200'}">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${item.paid ? 'checked' : ''} onchange="toggleBillPaid(${index})" class="w-5 h-5 accent-indigo-600 rounded cursor-pointer">
+                            <div>
+                                <p class="font-bold text-slate-800 ${item.paid ? 'line-through text-slate-400' : ''}">${item.name}</p>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${item.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                        ${item.paid ? '✓ Sudah Lunas' : 'Belum Dibayar'}
+                                    </span>
+                                    <span class="text-[11px] text-slate-400">Tiap akhir bulan</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="font-bold ${item.paid ? 'text-slate-400' : 'text-amber-600'}">Rp ${item.amount.toLocaleString('id-ID')}</span>
-                            <button onclick="deleteItem('bills', ${index})" class="text-xs text-rose-500 font-bold px-1.5 py-0.5 bg-white rounded-lg border border-rose-200">✕</button>
+                            <span class="font-extrabold ${item.paid ? 'text-slate-400' : 'text-slate-700'}">Rp ${item.amount.toLocaleString('id-ID')}</span>
+                            <button onclick="deleteItem('bills', ${index})" class="text-xs text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition">🗑️</button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            // Render Cicilan Tenor
+            // Render Tracker Cicilan ala Screenshot
             const installmentList = document.getElementById('installmentList');
             if (installmentsStore.length === 0) {
-                installmentList.innerHTML = '<p class="text-xs text-slate-400">Belum ada cicilan tenor.</p>';
+                installmentList.innerHTML = '<p class="text-xs text-slate-400">Belum ada cicilan berjangka.</p>';
             } else {
                 installmentList.innerHTML = installmentsStore.map((inst, index) => {
                     const isPaidThisMonth = currentData.installmentPaidKeys.includes(index);
                     const paidMonths = inst.paidMonths || 0;
                     const remainingMonths = inst.tenor - paidMonths;
                     const remainingAmount = remainingMonths * inst.amount;
+                    const progressPercent = Math.round((paidMonths / inst.tenor) * 100);
 
                     return `
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="p-3.5 bg-white rounded-2xl border border-slate-200 space-y-2.5 shadow-sm">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <p class="font-bold text-slate-800">${inst.name}</p>
-                                    <p class="text-xs text-slate-500">Rp ${inst.amount.toLocaleString('id-ID')} / bulan</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-slate-900">${inst.name}</p>
+                                        <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">Cicilan ke-${paidMonths + 1 > inst.tenor ? inst.tenor : paidMonths + 1} dari ${inst.tenor}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">Nominal: <b class="text-slate-700">Rp ${inst.amount.toLocaleString('id-ID')}</b> / bulan • Sisa tagihan: <b class="text-rose-600">Rp ${remainingAmount.toLocaleString('id-ID')}</b></p>
                                 </div>
-                                <button onclick="deleteInstallment(${index})" class="text-xs text-rose-500 font-bold px-1.5 py-0.5 bg-white rounded-lg border border-rose-200">✕</button>
+                                <button onclick="deleteInstallment(${index})" class="text-xs text-slate-400 hover:text-rose-500 p-1">🗑️</button>
                             </div>
-                            <div class="flex justify-between items-center text-xs text-slate-600 pt-1 border-t border-slate-200">
-                                <span>Progres: <b>${paidMonths}/${inst.tenor} Bulan</b></span>
-                                <span>Sisa: <b class="text-rose-600">Rp ${remainingAmount.toLocaleString('id-ID')}</b></span>
+                            
+                            <!-- Progress Bar -->
+                            <div class="space-y-1">
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                                </div>
+                                <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+                                    <span>Progres Terbayar: ${progressPercent}%</span>
+                                    <span>Sisa: ${remainingMonths} bulan lagi</span>
+                                </div>
                             </div>
-                            <button onclick="toggleInstallmentPaid(${index})" class="w-full py-1.5 rounded-lg text-xs font-bold transition ${isPaidThisMonth ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-600 text-white hover:bg-blue-700'}">
-                                ${isPaidThisMonth ? '✓ Sudah Dibayar Bulan Ini' : 'Bayar Cicilan Bulan Ini'}
+
+                            <button onclick="toggleInstallmentPaid(${index})" class="w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${isPaidThisMonth ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-600 text-white hover:bg-emerald-700'}">
+                                ${isPaidThisMonth ? '✓ Sudah Dibayar Bulan Ini' : '🟢 Bayar Cicilan Bulan Ini'}
                             </button>
                         </div>
                     `;
@@ -258,19 +310,24 @@
             saveData();
         }
 
+        function resetBills() {
+            const monthKey = monthFilter.value;
+            const currentData = getMonthData(monthKey);
+            currentData.bills.forEach(b => b.paid = false);
+            saveData();
+        }
+
         function toggleInstallmentPaid(index) {
             const monthKey = monthFilter.value;
             const currentData = getMonthData(monthKey);
             const keyIndex = currentData.installmentPaidKeys.indexOf(index);
 
             if (keyIndex > -1) {
-                // Unpay
                 currentData.installmentPaidKeys.splice(keyIndex, 1);
                 if (installmentsStore[index].paidMonths > 0) {
                     installmentsStore[index].paidMonths -= 1;
                 }
             } else {
-                // Pay
                 if ((installmentsStore[index].paidMonths || 0) < installmentsStore[index].tenor) {
                     currentData.installmentPaidKeys.push(index);
                     installmentsStore[index].paidMonths = (installmentsStore[index].paidMonths || 0) + 1;
