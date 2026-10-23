@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BudgetingKU - Kelola Keuangan, Tagihan & Cicilan</title>
-  <link rel="manifest" href="./manifest.json" /> <!-- Tambahkan di sini -->
   <meta name="description" content="Aplikasi manajemen keuangan pribadi, tagihan rutin bulanan, dan pelacak cicilan berjangka dengan penyimpanan data lokal privat." />
   <meta property="og:title" content="BudgetingKU - Kelola Keuangan, Tagihan & Cicilan" />
   <meta property="og:description" content="Aplikasi manajemen keuangan pribadi, tagihan rutin bulanan, dan pelacak cicilan berjangka." />
@@ -230,6 +229,12 @@
         <line x1="14" x2="14" y1="11" y2="17" />
       </IconBase>
     );
+    const PencilIcon = (p) => (
+      <IconBase {...p}>
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        <path d="m15 5 4 4" />
+      </IconBase>
+    );
     const ArrowUpCircleIcon = (p) => (
       <IconBase {...p}>
         <circle cx="12" cy="12" r="10" />
@@ -271,6 +276,16 @@
     const SquareIcon = (p) => (
       <IconBase {...p}>
         <rect width="18" height="18" x="3" y="3" rx="2" />
+      </IconBase>
+    );
+    const ChevronUpIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m18 15-6-6-6 6" />
+      </IconBase>
+    );
+    const ChevronDownIcon = (p) => (
+      <IconBase {...p}>
+        <path d="m6 9 6 6 6-6" />
       </IconBase>
     );
 
@@ -533,6 +548,218 @@
       );
     }
 
+    // --- EDIT MODAL (UNIVERSAL FOR INCOMES, TRANSACTIONS, BILLS, INSTALLMENTS) ---
+    function EditModal({ isOpen, type, item, onClose, onSave }) {
+      if (!isOpen || !item) return null;
+
+      const [name, setName] = useState(item.name || '');
+      const [amount, setAmount] = useState(item.amount ? String(item.amount) : '');
+      const [category, setCategory] = useState(item.category || '');
+      const [date, setDate] = useState(item.date || '');
+      const [dueDate, setDueDate] = useState(item.dueDate || '');
+      const [tenor, setTenor] = useState(item.tenor ? String(item.tenor) : '');
+      const [paidMonths, setPaidMonths] = useState(item.paidMonths !== undefined ? String(item.paidMonths) : '0');
+
+      useEffect(() => {
+        if (item) {
+          setName(item.name || '');
+          setAmount(item.amount ? String(item.amount) : '');
+          setCategory(item.category || '');
+          setDate(item.date || '');
+          setDueDate(item.dueDate || '');
+          setTenor(item.tenor ? String(item.tenor) : '');
+          setPaidMonths(item.paidMonths !== undefined ? String(item.paidMonths) : '0');
+        }
+      }, [item]);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const numAmount = parseFloat(String(amount).replace(/[^0-9]/g, ''));
+        if (!name.trim() || isNaN(numAmount) || numAmount <= 0) return;
+
+        const updated = {
+          ...item,
+          name: name.trim(),
+          amount: numAmount,
+        };
+
+        if (type === 'income' || type === 'transaction') {
+          if (category) updated.category = category;
+          if (date) updated.date = date;
+        }
+
+        if (type === 'bill') {
+          updated.dueDate = dueDate ? dueDate.trim() : undefined;
+        }
+
+        if (type === 'installment') {
+          const numTenor = parseInt(tenor, 10);
+          const numPaid = parseInt(paidMonths, 10);
+          if (isNaN(numTenor) || numTenor <= 0) return;
+          updated.tenor = numTenor;
+          updated.paidMonths = isNaN(numPaid) ? 0 : Math.min(numTenor, Math.max(0, numPaid));
+        }
+
+        onSave(updated);
+        onClose();
+      };
+
+      const typeLabel = {
+        income: 'Pemasukan',
+        transaction: 'Pengeluaran Harian',
+        bill: 'Tagihan Rutin',
+        installment: 'Tracker Cicilan',
+      }[type] || 'Item';
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <PencilIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Edit {typeLabel}</h3>
+                  <p className="text-[11px] text-slate-400">Perbarui data atau nominal</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3 pt-1">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Nama / Deskripsi
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Nominal (Rp) {type === 'installment' && '/ Bulan'}
+                </label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                  min="1"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-800"
+                />
+              </div>
+
+              {type === 'income' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kategori</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                  >
+                    {['Gaji Pokok', 'Bonus / THR', 'Freelance / Side Job', 'Investasi', 'Bisnis / Jualan', 'Lainnya'].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {type === 'transaction' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kategori</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                  >
+                    {['Makanan & Minuman', 'Transportasi & Bensin', 'Belanja Kebutuhan', 'Hiburan & Hobi', 'Kesehatan & Obat', 'Pendidikan', 'Lain-lain'].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(type === 'income' || type === 'transaction') && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal</label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                  />
+                </div>
+              )}
+
+              {type === 'bill' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jatuh Tempo (Opsional)</label>
+                  <input
+                    type="text"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    placeholder="Misal: Tgl 10 tiap bulan"
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+                  />
+                </div>
+              )}
+
+              {type === 'installment' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Tenor (Bln)</label>
+                    <input
+                      type="number"
+                      value={tenor}
+                      onChange={(e) => setTenor(e.target.value)}
+                      required
+                      min="1"
+                      className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sudah Bayar (Bln)</label>
+                    <input
+                      type="number"
+                      value={paidMonths}
+                      onChange={(e) => setPaidMonths(e.target.value)}
+                      min="0"
+                      max={tenor || 100}
+                      className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-800"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-2.5 px-4 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
     // --- AUTH SCREEN ---
     function AuthScreen({ onSuccess, showToast }) {
       const [isLoginMode, setIsLoginMode] = useState(true);
@@ -762,11 +989,62 @@
       );
     }
 
-    // --- PERIOD SELECTOR ---
-    function PeriodSelector({ currentMonthKey, onChangeMonth }) {
+    // --- DYNAMIC PERIOD SELECTOR (FULL AT TOP, COMPACT WHEN SCROLLED) ---
+    function PeriodSelector({ currentMonthKey, onChangeMonth, compact = false }) {
       const isCurrentMonth = currentMonthKey === getCurrentMonthKey();
+
+      if (compact) {
+        return (
+          <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-xs border border-slate-200/80 flex items-center justify-between gap-1.5 transition-all">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <CalendarIcon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span className="text-xs font-bold text-slate-800 truncate">
+                {formatMonthLabel(currentMonthKey)}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              {!isCurrentMonth && (
+                <button
+                  onClick={() => onChangeMonth(getCurrentMonthKey())}
+                  className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-1.5 py-0.5 rounded-lg transition flex items-center gap-0.5"
+                  title="Kembali ke Bulan Ini"
+                >
+                  <RotateCcwIcon className="w-2.5 h-2.5" />
+                  <span className="hidden xs:inline">Bulan Ini</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => onChangeMonth(getAdjacentMonthKey(currentMonthKey, -1))}
+                className="p-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition"
+                title="Bulan Sebelumnya"
+              >
+                <ChevronLeftIcon className="w-3 h-3" />
+              </button>
+
+              <input
+                type="month"
+                value={currentMonthKey}
+                onChange={(e) => e.target.value && onChangeMonth(e.target.value)}
+                className="px-1.5 py-0.5 text-[11px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700 cursor-pointer w-[105px]"
+              />
+
+              <button
+                onClick={() => onChangeMonth(getAdjacentMonthKey(currentMonthKey, 1))}
+                className="p-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition"
+                title="Bulan Berikutnya"
+              >
+                <ChevronRightIcon className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Ukuran Awal (Full / Normal saat di atas)
       return (
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5 transition-all">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
               <CalendarIcon className="w-4 h-4" />
@@ -786,6 +1064,7 @@
               <button
                 onClick={() => onChangeMonth(getCurrentMonthKey())}
                 className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-1.5 rounded-xl transition flex items-center gap-1"
+                title="Bulan Ini"
               >
                 <RotateCcwIcon className="w-3 h-3" />
                 <span>Bulan Ini</span>
@@ -819,16 +1098,105 @@
       );
     }
 
-    // --- SUMMARY CARDS ---
-    function SummaryCards({ totalIncomes, totalTrans, totalBills, totalInstallments, paidBillsTotal, paidInstallmentsTotal }) {
+    // --- DYNAMIC SUMMARY CARDS (FULL AT TOP, COMPACT WHEN SCROLLED) ---
+    function SummaryCards({ totalIncomes, totalTrans, totalBills, totalInstallments, paidBillsTotal, paidInstallmentsTotal, compact = false }) {
+      const [showDetail, setShowDetail] = useState(false);
       const totalExpenses = totalTrans + totalBills + totalInstallments;
       const remainingBudget = totalIncomes - totalExpenses;
       const isDeficit = remainingBudget < 0;
       const actualPaidOutflow = totalTrans + paidBillsTotal + paidInstallmentsTotal;
       const committedRatio = totalIncomes > 0 ? Math.min(Math.round((totalExpenses / totalIncomes) * 100), 100) : 0;
 
+      if (compact) {
+        return (
+          <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 shadow-xs space-y-1.5 transition-all">
+          {/* 3 Metrics in 1 neat, space-saving row */}
+          <div className="grid grid-cols-3 gap-1.5 text-center divide-x divide-slate-100">
+            {/* Dana Masuk */}
+            <div className="px-1">
+              <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block leading-tight">
+                Dana Masuk
+              </span>
+              <p className="text-xs sm:text-sm font-extrabold text-emerald-700 truncate mt-0.5">
+                {formatRupiah(totalIncomes)}
+              </p>
+            </div>
+
+            {/* Total Komitmen */}
+            <div className="px-1">
+              <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider block leading-tight">
+                Komitmen
+              </span>
+              <p className="text-xs sm:text-sm font-extrabold text-rose-700 truncate mt-0.5">
+                {formatRupiah(totalExpenses)}
+              </p>
+            </div>
+
+            {/* Sisa Saldo */}
+            <div className="px-1">
+              <span className={`text-[9px] font-bold uppercase tracking-wider block leading-tight ${isDeficit ? 'text-rose-600' : 'text-indigo-600'}`}>
+                Sisa Saldo
+              </span>
+              <p className={`text-xs sm:text-sm font-black truncate mt-0.5 ${isDeficit ? 'text-rose-700' : 'text-indigo-700'}`}>
+                {formatRupiah(remainingBudget)}
+              </p>
+            </div>
+          </div>
+
+          {/* Micro progress bar & quick status */}
+          <div className="pt-1 border-t border-slate-100 flex items-center justify-between gap-2 text-[10px] text-slate-500">
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-[9px] text-slate-400">Alokasi:</span>
+              <strong className="text-slate-700 text-[10px]">{committedRatio}%</strong>
+            </div>
+
+            <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  isDeficit ? 'bg-rose-600' : committedRatio > 85 ? 'bg-amber-500' : 'bg-indigo-600'
+                }`}
+                style={{ width: `${Math.min(committedRatio, 100)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[9px] text-slate-400 hidden xs:inline">
+                Terbayar: <strong className="text-slate-700">{formatRupiah(actualPaidOutflow)}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowDetail(!showDetail)}
+                className="text-[9px] font-semibold text-indigo-600 hover:text-indigo-700 px-1.5 py-0.5 rounded-md hover:bg-indigo-50 transition"
+              >
+                {showDetail ? 'Tutup' : 'Rincian'}
+              </button>
+            </div>
+          </div>
+
+          {/* Optional Expandable Breakdown (Only if clicked Rincian) */}
+          {showDetail && (
+            <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-100 text-left animate-in fade-in duration-100">
+              <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                <p className="text-[8px] font-bold text-slate-400 uppercase truncate">💸 Harian</p>
+                <p className="text-[10px] font-extrabold text-slate-700 truncate">{formatRupiah(totalTrans)}</p>
+              </div>
+              <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                <p className="text-[8px] font-bold text-slate-400 uppercase truncate">📄 Tagihan</p>
+                <p className="text-[10px] font-extrabold text-slate-700 truncate">{formatRupiah(totalBills)}</p>
+              </div>
+              <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                <p className="text-[8px] font-bold text-slate-400 uppercase truncate">⏱️ Cicilan</p>
+                <p className="text-[10px] font-extrabold text-slate-700 truncate">{formatRupiah(totalInstallments)}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+      // Mode Ukuran Awal (Full / Normal saat di atas)
       return (
-        <div className="space-y-3">
+        <div className="space-y-3 transition-all duration-300">
           <div className="grid grid-cols-2 gap-3">
             {/* Dana Masuk */}
             <div className="bg-emerald-50/80 border border-emerald-100 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
@@ -844,7 +1212,7 @@
               </div>
             </div>
 
-            {/* Total Komitmen Pengeluaran */}
+            {/* Total Komitmen */}
             <div className="bg-rose-50/80 border border-rose-100 p-3.5 rounded-2xl flex flex-col justify-between shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Total Komitmen</span>
@@ -923,7 +1291,7 @@
     // --- INCOME SECTION ---
     const INCOME_CATEGORIES = ['Gaji Pokok', 'Bonus / THR', 'Freelance / Side Job', 'Investasi', 'Bisnis / Jualan', 'Lainnya'];
 
-    function IncomeSection({ incomes, onAddIncome, onDeleteIncome }) {
+    function IncomeSection({ incomes, onAddIncome, onDeleteIncome, onEditIncome }) {
       const [name, setName] = useState('');
       const [amount, setAmount] = useState('');
       const [category, setCategory] = useState(INCOME_CATEGORIES[0]);
@@ -1031,8 +1399,16 @@
                       {item.date && <span className="text-slate-400">{item.date}</span>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-extrabold text-sm text-emerald-700">+ {formatRupiah(item.amount)}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-extrabold text-sm text-emerald-700 mr-1">+ {formatRupiah(item.amount)}</span>
+                    <button
+                      type="button"
+                      onClick={() => onEditIncome(item, index)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
+                      title="Edit Pemasukan"
+                    >
+                      <PencilIcon className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => onDeleteIncome(index)}
@@ -1053,7 +1429,7 @@
     // --- DAILY EXPENSE SECTION ---
     const EXPENSE_CATEGORIES = ['Makanan & Minuman', 'Transportasi & Bensin', 'Belanja Kebutuhan', 'Hiburan & Hobi', 'Kesehatan & Obat', 'Pendidikan', 'Lain-lain'];
 
-    function DailyExpenseSection({ transactions, onAddTransaction, onDeleteTransaction }) {
+    function DailyExpenseSection({ transactions, onAddTransaction, onDeleteTransaction, onEditTransaction }) {
       const [name, setName] = useState('');
       const [amount, setAmount] = useState('');
       const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
@@ -1185,6 +1561,7 @@
             ) : (
               filtered.map((item, index) => {
                 const origIdx = transactions.indexOf(item);
+                const actualIdx = origIdx >= 0 ? origIdx : index;
                 return (
                   <div key={item.id || index} className="flex justify-between items-center p-3 bg-slate-50/80 rounded-2xl border border-slate-100 hover:border-slate-200 transition">
                     <div className="min-w-0 pr-2">
@@ -1194,11 +1571,19 @@
                         {item.date && <span className="text-slate-400">{formatDateIndo(item.date)}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-extrabold text-sm text-rose-600">- {formatRupiah(item.amount)}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-extrabold text-sm text-rose-600 mr-1">- {formatRupiah(item.amount)}</span>
                       <button
                         type="button"
-                        onClick={() => onDeleteTransaction(origIdx >= 0 ? origIdx : index)}
+                        onClick={() => onEditTransaction(item, actualIdx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
+                        title="Edit Transaksi"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTransaction(actualIdx)}
                         className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
                         title="Hapus"
                       >
@@ -1215,7 +1600,7 @@
     }
 
     // --- MONTHLY BILLS SECTION ---
-    function MonthlyBillsSection({ bills, onAddBill, onToggleBillPaid, onDeleteBill, onCopyPreviousMonthBills, onResetBills }) {
+    function MonthlyBillsSection({ bills, onAddBill, onToggleBillPaid, onDeleteBill, onEditBill, onCopyPreviousMonthBills, onResetBills }) {
       const [name, setName] = useState('');
       const [amount, setAmount] = useState('');
       const [dueDate, setDueDate] = useState('');
@@ -1393,10 +1778,18 @@
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`font-extrabold text-sm ${item.paid ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`font-extrabold text-sm mr-1 ${item.paid ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
                         {formatRupiah(item.amount)}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => onEditBill(item, index)}
+                        className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition"
+                        title="Edit Tagihan"
+                      >
+                        <PencilIcon className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => onDeleteBill(index)}
@@ -1416,7 +1809,7 @@
     }
 
     // --- INSTALLMENTS SECTION ---
-    function InstallmentsSection({ installments, installmentPaidKeys, onAddInstallment, onToggleInstallmentPaid, onDeleteInstallment }) {
+    function InstallmentsSection({ installments, installmentPaidKeys, onAddInstallment, onToggleInstallmentPaid, onDeleteInstallment, onEditInstallment }) {
       const [name, setName] = useState('');
       const [amount, setAmount] = useState('');
       const [tenor, setTenor] = useState('');
@@ -1585,14 +1978,24 @@
                             </b>
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteInstallment(index)}
-                          className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition shrink-0"
-                          title="Hapus"
-                        >
-                          <Trash2Icon className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => onEditInstallment(inst, index)}
+                            className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition"
+                            title="Edit Cicilan"
+                          >
+                            <PencilIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteInstallment(index)}
+                            className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition"
+                            title="Hapus"
+                          >
+                            <Trash2Icon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-1.5">
@@ -1894,6 +2297,28 @@
       const [toasts, setToasts] = useState([]);
       const [isExportOpen, setIsExportOpen] = useState(false);
 
+      // Dynamic dashboard compact state when user scrolls down
+      const [isScrolled, setIsScrolled] = useState(false);
+
+      useEffect(() => {
+        const handleScroll = () => {
+          const scrolled = window.scrollY > 40;
+          setIsScrolled((prev) => (prev !== scrolled ? scrolled : prev));
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
+
+      // Edit modal state
+      const [editModal, setEditModal] = useState({
+        isOpen: false,
+        type: 'income',
+        item: null,
+        index: -1,
+      });
+
       const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
         title: '',
@@ -1958,7 +2383,7 @@
 
       const currentMonthData = getOrCreateMonthData(dataStore, currentMonthKey);
 
-      // Incomes
+      // --- INCOMES HANDLERS ---
       const handleAddIncome = (income) => {
         const newItem = { ...income, id: `inc-${Date.now()}` };
         updateDataStore({
@@ -1969,6 +2394,15 @@
           },
         });
         showToast('success', `Pemasukan "${newItem.name}" dicatat.`);
+      };
+
+      const handleOpenEditIncome = (item, index) => {
+        setEditModal({
+          isOpen: true,
+          type: 'income',
+          item: item,
+          index: index,
+        });
       };
 
       const handleDeleteIncome = (index) => {
@@ -1992,7 +2426,7 @@
         });
       };
 
-      // Transactions
+      // --- TRANSACTIONS HANDLERS ---
       const handleAddTransaction = (tx) => {
         const newItem = { ...tx, id: `tx-${Date.now()}` };
         updateDataStore({
@@ -2003,6 +2437,15 @@
           },
         });
         showToast('success', `Pengeluaran "${newItem.name}" dicatat.`);
+      };
+
+      const handleOpenEditTransaction = (item, index) => {
+        setEditModal({
+          isOpen: true,
+          type: 'transaction',
+          item: item,
+          index: index,
+        });
       };
 
       const handleDeleteTransaction = (index) => {
@@ -2026,7 +2469,7 @@
         });
       };
 
-      // Bills
+      // --- BILLS HANDLERS ---
       const handleAddBill = (bill) => {
         const newItem = { ...bill, id: `bill-${Date.now()}`, paid: false };
         updateDataStore({
@@ -2037,6 +2480,15 @@
           },
         });
         showToast('success', `Tagihan "${newItem.name}" ditambahkan.`);
+      };
+
+      const handleOpenEditBill = (item, index) => {
+        setEditModal({
+          isOpen: true,
+          type: 'bill',
+          item: item,
+          index: index,
+        });
       };
 
       const handleToggleBillPaid = (index) => {
@@ -2128,7 +2580,7 @@
         });
       };
 
-      // Installments
+      // --- INSTALLMENTS HANDLERS ---
       const handleAddInstallment = (item) => {
         const newItem = {
           ...item,
@@ -2138,6 +2590,15 @@
         };
         updateInstallments([...installments, newItem]);
         showToast('success', `Tracker cicilan "${newItem.name}" dibuat.`);
+      };
+
+      const handleOpenEditInstallment = (item, index) => {
+        setEditModal({
+          isOpen: true,
+          type: 'installment',
+          item: item,
+          index: index,
+        });
       };
 
       const handleToggleInstallmentPaid = (index) => {
@@ -2196,6 +2657,43 @@
         });
       };
 
+      // --- SAVE EDITED ITEM (UNIVERSAL) ---
+      const handleSaveEditedItem = (updatedItem) => {
+        const { type, index } = editModal;
+        if (index < 0) return;
+
+        if (type === 'income') {
+          const next = [...currentMonthData.incomes];
+          next[index] = updatedItem;
+          updateDataStore({
+            ...dataStore,
+            [currentMonthKey]: { ...currentMonthData, incomes: next },
+          });
+          showToast('success', `Pemasukan "${updatedItem.name}" berhasil diperbarui.`);
+        } else if (type === 'transaction') {
+          const next = [...currentMonthData.transactions];
+          next[index] = updatedItem;
+          updateDataStore({
+            ...dataStore,
+            [currentMonthKey]: { ...currentMonthData, transactions: next },
+          });
+          showToast('success', `Pengeluaran "${updatedItem.name}" berhasil diperbarui.`);
+        } else if (type === 'bill') {
+          const next = [...currentMonthData.bills];
+          next[index] = updatedItem;
+          updateDataStore({
+            ...dataStore,
+            [currentMonthKey]: { ...currentMonthData, bills: next },
+          });
+          showToast('success', `Tagihan "${updatedItem.name}" berhasil diperbarui.`);
+        } else if (type === 'installment') {
+          const next = [...installments];
+          next[index] = updatedItem;
+          updateInstallments(next);
+          showToast('success', `Cicilan "${updatedItem.name}" berhasil diperbarui.`);
+        }
+      };
+
       const handleLoadDemo = () => {
         if (!currentUser) return;
         setConfirmModal({
@@ -2252,6 +2750,14 @@
             onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
           />
 
+          <EditModal
+            isOpen={editModal.isOpen}
+            type={editModal.type}
+            item={editModal.item}
+            onClose={() => setEditModal((prev) => ({ ...prev, isOpen: false }))}
+            onSave={handleSaveEditedItem}
+          />
+
           <ExportModal
             isOpen={isExportOpen}
             onClose={() => setIsExportOpen(false)}
@@ -2264,6 +2770,7 @@
           />
 
           <div>
+            {/* Header (Sticky top-0) */}
             <Header
               username={currentUser}
               onLogout={handleLogout}
@@ -2272,30 +2779,42 @@
             />
 
             <main className="max-w-xl mx-auto p-4 sm:p-5 space-y-4 w-full">
-              <PeriodSelector
-                currentMonthKey={currentMonthKey}
-                onChangeMonth={setCurrentMonthKey}
-              />
+              {/* STICKY DASHBOARD CONTAINER (Ukuran awal saat di atas, otomatis mengecil saat di-scroll) */}
+              <div
+                className={`sticky top-[52px] sm:top-[56px] z-30 bg-slate-100/95 backdrop-blur-md transition-all duration-300 ${
+                  isScrolled ? 'pt-1 pb-1.5 space-y-1.5 shadow-xs' : 'pt-1 pb-3 space-y-3'
+                }`}
+              >
+                <PeriodSelector
+                  currentMonthKey={currentMonthKey}
+                  onChangeMonth={setCurrentMonthKey}
+                  compact={isScrolled}
+                />
 
-              <SummaryCards
-                totalIncomes={totalIncomes}
-                totalTrans={totalTrans}
-                totalBills={totalBills}
-                totalInstallments={totalInstallments}
-                paidBillsTotal={paidBillsTotal}
-                paidInstallmentsTotal={paidInstallmentsTotal}
-              />
+                <SummaryCards
+                  totalIncomes={totalIncomes}
+                  totalTrans={totalTrans}
+                  totalBills={totalBills}
+                  totalInstallments={totalInstallments}
+                  paidBillsTotal={paidBillsTotal}
+                  paidInstallmentsTotal={paidInstallmentsTotal}
+                  compact={isScrolled}
+                />
+              </div>
 
+              {/* SECTIONS LIST */}
               <IncomeSection
                 incomes={currentMonthData.incomes}
                 onAddIncome={handleAddIncome}
                 onDeleteIncome={handleDeleteIncome}
+                onEditIncome={handleOpenEditIncome}
               />
 
               <DailyExpenseSection
                 transactions={currentMonthData.transactions}
                 onAddTransaction={handleAddTransaction}
                 onDeleteTransaction={handleDeleteTransaction}
+                onEditTransaction={handleOpenEditTransaction}
               />
 
               <MonthlyBillsSection
@@ -2303,6 +2822,7 @@
                 onAddBill={handleAddBill}
                 onToggleBillPaid={handleToggleBillPaid}
                 onDeleteBill={handleDeleteBill}
+                onEditBill={handleOpenEditBill}
                 onCopyPreviousMonthBills={handleCopyPreviousMonthBills}
                 onResetBills={handleResetBills}
               />
@@ -2313,6 +2833,7 @@
                 onAddInstallment={handleAddInstallment}
                 onToggleInstallmentPaid={handleToggleInstallmentPaid}
                 onDeleteInstallment={handleDeleteInstallment}
+                onEditInstallment={handleOpenEditInstallment}
               />
             </main>
           </div>
